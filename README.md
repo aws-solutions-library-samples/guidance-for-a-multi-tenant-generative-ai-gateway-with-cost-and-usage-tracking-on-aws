@@ -20,7 +20,18 @@ Sample notebook in the notebooks folder can be used to invoke Bedrock as either 
 
 ### Step 1
 
-Edit the value `<PREFIX_ID>` in the file [app.py](./setup/app.py)
+Edit the [global configs](./setup/configs.json) used in the CDK Stack. For each organizational units that requires a dedicated multi-tenant SaaS environment, create an entry in [setup/configs.json](./setup/configs.json)
+
+```
+[
+  {
+    "STACK_PREFIX": "" # unit 1 with dedicated SaaS resources
+  },
+  {
+    "STACK_PREFIX": "" # unit 2 with dedicated SaaS resources
+  },
+]
+```
 
 ### Step 2
 
