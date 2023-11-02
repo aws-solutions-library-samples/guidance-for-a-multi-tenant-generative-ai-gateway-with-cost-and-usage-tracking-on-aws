@@ -1,7 +1,6 @@
 from constructs import Construct
 from aws_cdk import (
     aws_apigateway as apigw,
-    Duration
 )
 
 class APIKey(Construct):
@@ -22,7 +21,7 @@ class APIKey(Construct):
         # Create API key
         api_key = apigw.ApiKey(
             self,
-            f"{self.id}_API_KEY",
+            f"{self.id}_api_key",
             description=f"API Key for {self.id}",
             enabled=True
         )
@@ -35,9 +34,9 @@ class APIKey(Construct):
         )
 
         stage = apigw.Stage(
-            self, f"{self.id}_prod",
+            self, f"{self.id}_stage_prod",
             deployment=deployment,
-            stage_name=f"prod"
+            stage_name="prod"
         )
 
         # Associate API key with Usage Plan
@@ -49,7 +48,7 @@ class APIKey(Construct):
                     "stage": stage
                 }
             ],
-            name=f"{self.id}_prod"
+            name=f"{self.id}_usage_plan_prod"
         )
 
         usage_plan.add_api_key(api_key)
