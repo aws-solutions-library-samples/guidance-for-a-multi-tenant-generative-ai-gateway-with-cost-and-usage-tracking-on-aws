@@ -201,7 +201,7 @@ The CDK Stack creates Rest API compliant with OpenAPI specification standards.
 
 ### Step 1
 
-Edit the [global configs](./setup/configs.json) used in the CDK Stack. For each organizational units that requires a dedicated multi-tenant SaaS environment, create an entry in [setup/configs.json](./setup/configs.json)
+Edit the global configs used in the CDK Stack. For each organizational units that requires a dedicated multi-tenant SaaS environment, create an entry in [setup/configs.json](./setup/configs.json)
 
 ```
 [
