@@ -15,10 +15,11 @@ from stack_constructs.api_key import APIKey
 from stack_constructs.iam import IAM
 from stack_constructs.lambda_function import LambdaFunction
 from stack_constructs.lambda_layer import LambdaLayer
+from stack_constructs.network import Network
 from stack_constructs.scheduler import LambdaFunctionScheduler
 import traceback
 
-def load_configs(filename):
+def _load_configs(filename):
     """
     Loads config from file
     """
@@ -29,15 +30,20 @@ def load_configs(filename):
     return config
 
 class BedrockAPIStack(Stack):
-    def __init__(self, scope: Construct, id: str, prefix_id: str, **kwargs) -> None:
+    def __init__(
+            self, scope:
+            Construct, id: str,
+            prefix_id: str,
+            vpc_cidr: str,
+            **kwargs) -> None:
         super().__init__(scope, id, **kwargs)
-
         # ==================================================
         # ============== STATIC PARAMETERS =================
         # ==================================================
         self.id = id
         self.lambdas_directory = "./../lambdas"
         self.prefix_id = prefix_id
+        self.vpc_cidr = vpc_cidr
 
         # ==================================================
         # ================= PARAMETERS =====================
@@ -80,6 +86,21 @@ class BedrockAPIStack(Stack):
         )
 
         iam_role = iam.build()
+
+        # ==================================================
+        # =================== NETWORK ======================
+        # ==================================================
+
+        network_class = Network(
+            scope=self,
+            id="network_stack",
+            account=self.account,
+            region=self.region
+        )
+
+        vpc, private_subnet1, private_subnet2, security_group = network_class.build(
+            vpc_cidr=self.vpc_cidr
+        )
 
         # ==================================================
         # =============== LAMBDA LAYERS ====================
@@ -127,7 +148,7 @@ class BedrockAPIStack(Stack):
         )
 
         # ==================================================
-        # ============= Bedrock Functions ==================
+        # ============= BEDROCK FUNCTIONS ==================
         # ==================================================
 
         lambda_function = LambdaFunction(
@@ -144,6 +165,9 @@ class BedrockAPIStack(Stack):
             environment={
                 "BEDROCK_URL": "https://bedrock-runtime.us-east-1.amazonaws.com",
             },
+            vpc=vpc,
+            subnets=[private_subnet1, private_subnet2],
+            security_groups=[security_group],
             layers=[boto3_layer, langchain_layer]
         )
 
@@ -155,11 +179,14 @@ class BedrockAPIStack(Stack):
             environment={
                 "BEDROCK_URL": self.bedrock_endpoint_url
             },
+            vpc=vpc,
+            subnets=[private_subnet1, private_subnet2],
+            security_groups=[security_group],
             layers=[boto3_layer]
         )
 
         # ==================================================
-        # =============== Lambda Metering ==================
+        # =============== LAMBDA METERING ==================
         # ==================================================
 
         s3_bucket_metering = aws_s3.Bucket(
@@ -179,6 +206,9 @@ class BedrockAPIStack(Stack):
                 "LOG_GROUP_API": f"/aws/lambda/{self.prefix_id}_bedrock_invoke_model",
                 "S3_BUCKET": s3_bucket_metering.bucket_name
             },
+            vpc=vpc,
+            subnets=[private_subnet1, private_subnet2],
+            security_groups=[security_group],
             layers=[pandas_layer]
         )
 
@@ -192,7 +222,7 @@ class BedrockAPIStack(Stack):
         )
 
         # ==================================================
-        # ================== API Gateway ===================
+        # ================== API GATEWAY ===================
         # ==================================================
 
         api_gw_class = APIGW(
@@ -204,7 +234,7 @@ class BedrockAPIStack(Stack):
         api_gw = api_gw_class.build()
 
         # ==================================================
-        # =================== API Key ======================
+        # =================== API KEY ======================
         # ==================================================
 
         api_key_class = APIKey(
@@ -217,7 +247,7 @@ class BedrockAPIStack(Stack):
         )
 
         # ==================================================
-        # ================== API Routes ====================
+        # ================== API ROUTES ====================
         # ==================================================
 
         api_route = API(
@@ -247,11 +277,14 @@ class BedrockAPIStack(Stack):
 
 app = App()
 
-configs = load_configs("./configs.json")
+configs = _load_configs("./configs.json")
 
 for config in configs:
     api_stack = BedrockAPIStack(
-        scope=app, id=f"{config['STACK_PREFIX']}-bedrock-saas", prefix_id=config['STACK_PREFIX']
+        scope=app,
+        id=f"{config['STACK_PREFIX']}-bedrock-saas",
+        prefix_id=config['STACK_PREFIX'],
+        vpc_cidr=config["VPC_CIDR"]
     )
 
     api_stack.build()

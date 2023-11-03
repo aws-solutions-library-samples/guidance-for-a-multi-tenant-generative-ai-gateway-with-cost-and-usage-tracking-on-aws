@@ -13,7 +13,8 @@ Multiple tenants within an enterprise could simply reflect to multiple teams or 
 ![IMAGE_DESCRIPTION](images/architecture.png)
 
 The CDK Stack deploys the following resources : 
-1. API gateway 
+1. Private Networking environment with VPC, Private Subnets, VPC Endpoints for Lambda, API Gateway, and Amazon Bedrock
+2. API gateway
 2. Lambda functions  to list foundation models on Bedrock and invoke models on Bedrock 
 3. Lambda function to aggregate usage and cost metering 
 4. EventBridge to trigger the metering aggregation on a regular frequency
@@ -207,9 +208,11 @@ Edit the global configs used in the CDK Stack. For each organizational units tha
 [
   {
     "STACK_PREFIX": "" # unit 1 with dedicated SaaS resources
+    "VPC_CIDR": "10.10.0.0/16" # CIDR used for the private VPC Env
   },
   {
-    "STACK_PREFIX": "" # unit 2 with dedicated SaaS resources
+    "STACK_PREFIX": "" # unit 2 with dedicated SaaS resources,
+    "VPC_CIDR": "10.20.0.0/16" # CIDR used for the private VPC Env
   },
 ]
 ```

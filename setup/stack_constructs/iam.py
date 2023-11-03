@@ -28,6 +28,29 @@ class IAM(Construct):
             ],
         )
 
+        self.ec2_policy = iam.Policy(
+            scope=self,
+            id=f"{self.id}_policy_ec2",
+            policy_name="EC2Policy",
+            statements=[
+                iam.PolicyStatement(
+                    effect=iam.Effect.ALLOW,
+                    actions=[
+                        'ec2:AssignPrivateIpAddresses',
+                        'ec2:CreateNetworkInterface',
+                        'ec2:DeleteNetworkInterface',
+                        'ec2:DescribeNetworkInterfaces',
+                        'ec2:DescribeSecurityGroups',
+                        'ec2:DescribeSubnets',
+                        'ec2:DescribeVpcs',
+                        'ec2:UnassignPrivateIpAddresses',
+                        'ec2:*VpcEndpoint*'
+                    ],
+                    resources=["*"],
+                )
+            ],
+        )
+
         self.s3_policy = iam.Policy(
             scope=self,
             id=f"{self.id}_policy_s3",
@@ -67,6 +90,7 @@ class IAM(Construct):
             ],
         )
 
+        self.ec2_policy.attach_to_role(self.lambda_role)
         self.s3_policy.attach_to_role(self.lambda_role)
         self.bedrock_policy.attach_to_role(self.lambda_role)
 
