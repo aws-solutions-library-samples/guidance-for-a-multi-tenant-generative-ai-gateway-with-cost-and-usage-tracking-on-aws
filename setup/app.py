@@ -33,8 +33,7 @@ class BedrockAPIStack(Stack):
     def __init__(
             self, scope:
             Construct, id: str,
-            prefix_id: str,
-            vpc_cidr: str,
+            config: dict,
             **kwargs) -> None:
         super().__init__(scope, id, **kwargs)
         # ==================================================
@@ -42,39 +41,16 @@ class BedrockAPIStack(Stack):
         # ==================================================
         self.id = id
         self.lambdas_directory = "./../lambdas"
-        self.prefix_id = prefix_id
-        self.vpc_cidr = vpc_cidr
+        self.prefix_id = config["STACK_PREFIX"]
+        self.vpc_cidr = config["VPC_CIDR"]
 
         # ==================================================
         # ================= PARAMETERS =====================
         # ==================================================
-        self.bedrock_endpoint_url = CfnParameter(
-            self,
-            "bedrock_endpoint_url",
-            type="String",
-            default="https://bedrock-runtime.us-east-1.amazonaws.com"
-        ).value_as_string
-
-        self.bedrock_sdk_url = CfnParameter(
-            self,
-            "bedrock_sdk_url",
-            type="String",
-            default="https://d2eo22ngex1n9g.cloudfront.net/Documentation/SDK/bedrock-python-sdk.zip"
-        ).value_as_string
-
-        self.langchain_requirements = CfnParameter(
-            self,
-            "langchain_requirements",
-            type="String",
-            default="aws-lambda-powertools langchain==0.0.309 pydantic PyYaml"
-        ).value_as_string
-
-        self.pandas_requirements = CfnParameter(
-            self,
-            "pandas_requirements",
-            type="String",
-            default="pandas"
-        ).value_as_string
+        self.bedrock_endpoint_url = config["BEDROCK_ENDPOINT"].format(self.region)
+        self.bedrock_sdk_url = config["BEDROCK_SDK_URL"]
+        self.langchain_requirements = config["LANGCHAIN_REQUIREMENTS"]
+        self.pandas_requirements = config["PANDAS_REQUIREMENTS"]
 
     def build(self):
         # ==================================================
@@ -283,8 +259,7 @@ for config in configs:
     api_stack = BedrockAPIStack(
         scope=app,
         id=f"{config['STACK_PREFIX']}-bedrock-saas",
-        prefix_id=config['STACK_PREFIX'],
-        vpc_cidr=config["VPC_CIDR"]
+        config=config
     )
 
     api_stack.build()

@@ -69,6 +69,12 @@ def _get_bedrock_client():
 
         raise e
 
+def _get_tokens(string):
+    logger.info("Counting approximation tokens")
+
+    return math.floor(len(string)/4)
+
+
 def lambda_handler(event, context):
     try:
         if "team_id" in event["headers"] and event["headers"]["team_id"] is not None and event["headers"]["team_id"] != "":
@@ -131,8 +137,8 @@ def lambda_handler(event, context):
                 "team_id": team_id,
                 "requestId": request_id,
                 "model_id": model_id,
-                "inputTokens": math.floor(len(body["inputs"])/4),
-                "outputTokens": math.floor(len(response)/4),
+                "inputTokens": _get_tokens(body["inputs"]),
+                "outputTokens": _get_tokens(response),
             })
 
             return results
