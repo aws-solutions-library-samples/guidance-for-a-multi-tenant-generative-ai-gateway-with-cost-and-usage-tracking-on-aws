@@ -19,7 +19,15 @@ s3_bucket = os.environ.get("S3_BUCKET", None)
 s3_resource = boto3.resource('s3')
 
 QUERY_API = """
-fields message.team_id as team_id, message.request_id as request_id, message.model_id as model_id, message.inputTokens as input_tokens, message.outputTokens as output_tokens
+fields 
+message.team_id as team_id, 
+message.request_id as request_id, 
+message.model_id as model_id, 
+message.inputTokens as input_tokens, 
+message.outputTokens as output_tokens,
+message.height as height,
+message.width as width,
+message.steps as steps
 | filter level = "INFO"
 """
 
@@ -36,7 +44,7 @@ def process_event(event):
 
         # aggregate cost for each model_id
         df_bedrock_metering_aggregated = df_bedrock_metering.groupby(["team_id", "model_id"]).sum()[
-            ["input_tokens", "output_tokens", "invocations", "input_cost", "output_cost"]
+            ["input_tokens", "output_tokens", "input_cost", "output_cost", "invocations"]
         ]
 
         logger.info(df_bedrock_metering_aggregated.to_string())
@@ -51,8 +59,8 @@ def process_event(event):
         s3_resource.Object(s3_bucket, file_name).put(Body=csv_buffer.getvalue())
     except Exception as e:
         stacktrace = traceback.format_exc()
-
         logger.error(stacktrace)
+
         raise e
 
 def lambda_handler(event, context):
@@ -61,6 +69,6 @@ def lambda_handler(event, context):
         return {"statusCode": 200, "body": "OK"}
     except Exception as e:
         stacktrace = traceback.format_exc()
-
         logger.error(stacktrace)
+
         return {"statusCode": 500, "body": str(e)}

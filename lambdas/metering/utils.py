@@ -1,13 +1,20 @@
-import time
 import boto3
 import datetime
+import logging
 import pandas as pd
 import pytz
+import time
+import traceback
 
-MODEL_PRICES = {
+logger = logging.getLogger(__name__)
+if len(logging.getLogger().handlers) > 0:
+    logging.getLogger().setLevel(logging.INFO)
+else:
+    logging.basicConfig(level=logging.INFO)
+
+MODEL_PRICES_TEXT = {
     "amazon.titan-text-express-v1": {"input_cost": 0.0013, "output_cost": 0.0017},
     "amazon.titan-embed-text-v1": {"input_cost": 0.0001, "output_cost": 0},
-    "stability.stable-diffusion-xl": {"input_cost": 0.018, "output_cost": 0.036},
     "ai21.j2-ultra-v1": {"input_cost": 0.0188, "output_cost": 0.0125},
     "ai21.j2-mid-v1": {"input_cost": 0.0125, "output_cost": 0.0188},
     "anthropic.claude-instant-v1": {"input_cost": 0.00163, "output_cost": 0.00551},
@@ -16,7 +23,20 @@ MODEL_PRICES = {
     "cohere.command-text-v14": {"input_cost": 0.0015, "output_cost": 0.0020},
 }
 
-def get_model_pricing(model_id):
+MODEL_PRICES_IMAGE = {
+    "stability.stable-diffusion-xl": {
+        "512x512": {
+            "standard": 0.018,
+            "premium": 0.036
+        },
+        "larger": {
+           "standard": 0.036,
+           "premium": 0.072
+        }
+    }
+}
+
+def get_model_pricing(model_id, MODEL_PRICES):
     matched = [v for k, v in MODEL_PRICES.items() if model_id in k]
     if not matched:
         return None
@@ -55,6 +75,45 @@ def run_query(query, log_group_name):
 
     return response["results"]
 
+def model_price_image(row):
+    height = float(row["height"]) if "height" in row else 0.0
+    width = float(row["width"]) if "width" in row else 0.0
+    steps = float(row["steps"]) if "steps" in row else 0.0
+
+    model_id = row["model_id"]
+
+    # get model pricing from utils
+    model_pricing = get_model_pricing(model_id, MODEL_PRICES_IMAGE)
+
+    if width <= 512 and height <= 512:
+        size = "512x512"
+    else:
+        size = "larger"
+
+    model_pricing = get_model_pricing(size, model_pricing)
+
+    if steps > 51:
+        price = model_pricing["premium"]
+    else:
+        price = model_pricing["standard"]
+
+    return 0.0, 0.0, 0.0, price
+
+def model_price_text(row):
+    input_token_count = float(row["input_tokens"]) if "input_tokens" in row else 0.0
+    output_token_count = float(row["output_tokens"]) if "output_tokens" in row else 0.0
+
+    model_id = row["model_id"]
+
+    # get model pricing from utils
+    model_pricing = get_model_pricing(model_id, MODEL_PRICES_TEXT)
+
+    # calculate costs of prompt and completion
+    input_cost = input_token_count * model_pricing["input_cost"] / 1000
+    output_cost = output_token_count * model_pricing["output_cost"] / 1000
+
+    return input_token_count, output_token_count, input_cost, output_cost
+
 def results_to_df(results):
     column_names = set()
     rows = []
@@ -73,18 +132,18 @@ def results_to_df(results):
 
 def calculate_cost(row):
     try:
-        input_token_count = float(row["input_tokens"])
-        output_token_count = float(row["output_tokens"])
         model_id = row["model_id"]
 
-        # get model pricing from utils
-        model_pricing = get_model_pricing(model_id)
-
-        # calculate costs of prompt and completion
-        input_cost = input_token_count * model_pricing["input_cost"] / 1000
-        output_cost = output_token_count * model_pricing["output_cost"] / 1000
+        if model_id in list(MODEL_PRICES_TEXT.keys()):
+            input_token_count, output_token_count, input_cost, output_cost = model_price_text(row)
+        elif model_id in list(MODEL_PRICES_IMAGE.keys()):
+            input_token_count, output_token_count, input_cost, output_cost = model_price_image(row)
+        else:
+            input_token_count, output_token_count, input_cost, output_cost = 0.0, 0.0, 0.0, 0.0
 
         return input_token_count, output_token_count, input_cost, output_cost, 1
-    except (ValueError, KeyError):
-        # Handle cases where data is not in the expected format
-        return None, None, None, None
+    except Exception as e:
+        stacktrace = traceback.format_exc()
+        logger.error(stacktrace)
+
+        raise e

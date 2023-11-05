@@ -74,6 +74,76 @@ def _get_tokens(string):
 
     return math.floor(len(string)/4)
 
+def _invoke_embeddings(bedrock_client, model_id, body, model_kwargs):
+    try:
+        request_body = {**model_kwargs, "inputText": body["inputs"]}
+        request_body = json.dumps(request_body)
+
+        response = bedrock_client.invoke_model(
+            body=request_body,
+            modelId=model_id,
+            accept="application/json",
+            contentType="application/json",
+        )
+
+        response_body = json.loads(response.get("body").read())
+        response = response_body.get("embedding")
+
+        return response
+    except Exception as e:
+        stacktrace = traceback.format_exc()
+
+        logger.error(stacktrace)
+
+        raise e
+
+def _invoke_image(bedrock_client, model_id, body, model_kwargs):
+    try:
+        request_body = {**model_kwargs, "text_prompts": body["text_prompts"]}
+        request_body = json.dumps(request_body)
+
+        response = bedrock_client.invoke_model(
+            body=request_body,
+            modelId=model_id,
+            accept="application/json",
+            contentType="application/json",
+        )
+
+        response_body = json.loads(response.get("body").read())
+        response = response_body.get("artifacts")
+
+        return response
+    except Exception as e:
+        stacktrace = traceback.format_exc()
+
+        logger.error(stacktrace)
+
+        raise e
+
+def _invoke_text(bedrock_client, model_id, body, model_kwargs):
+    try:
+        provider = model_id.split(".")[0]
+
+        request_body = LLMInputOutputAdapter.prepare_input(provider, body["inputs"], model_kwargs)
+
+        request_body = json.dumps(request_body)
+
+        response = bedrock_client.invoke_model(
+            body=request_body,
+            modelId=model_id,
+            accept="application/json",
+            contentType="application/json"
+        )
+
+        response = LLMInputOutputAdapter.prepare_output(provider, response)
+
+        return response
+    except Exception as e:
+        stacktrace = traceback.format_exc()
+
+        logger.error(stacktrace)
+
+        raise e
 
 def lambda_handler(event, context):
     try:
@@ -85,15 +155,22 @@ def lambda_handler(event, context):
             request_id = event['requestContext']['requestId']
             team_id = event["headers"]["team_id"]
 
-            if "embeddings" in event["headers"] and event["headers"]["embeddings"] in ["True", "true"]:
-                embeddings = True
+            ## Check for embeddings or image
+            if "type" in event["headers"]:
+                if event["headers"]["type"].lower() == "embeddings":
+                    embeddings = True
+                    image = False
+                elif event["headers"]["type"].lower() == "image":
+                    embeddings = False
+                    image = True
+                else:
+                    embeddings = False
+                    image = False
             else:
                 embeddings = False
-
-            provider = model_id.split(".")[0]
+                image = False
 
             logger.info(f"Model ID: {model_id}")
-            logger.info(f"Provider: {provider}")
             logger.info(f"Request ID: {request_id}")
 
             body = json.loads(event["body"])
@@ -103,43 +180,52 @@ def lambda_handler(event, context):
             model_kwargs = body["parameters"] if "parameters" in body else {}
 
             if embeddings:
-                request_body = {**model_kwargs, "inputText": body["inputs"]}
-                request_body = json.dumps(request_body)
-
-                response = bedrock_client.invoke_model(
-                    body=request_body,
-                    modelId=model_id,
-                    accept="application/json",
-                    contentType="application/json",
-                )
-
-                response_body = json.loads(response.get("body").read())
-                response = response_body.get("embedding")
+                response = _invoke_embeddings(bedrock_client, model_id, body, model_kwargs)
 
                 results = {"statusCode": 200, "body": json.dumps([{"embedding": response}])}
+
+                logs = {
+                    "team_id": team_id,
+                    "requestId": request_id,
+                    "model_id": model_id,
+                    "inputTokens": _get_tokens(body["inputs"]),
+                    "outputTokens": _get_tokens(response),
+                    "height": None,
+                    "width": None,
+                    "steps": None
+                }
+            elif image:
+                response = _invoke_image(bedrock_client, model_id, body, model_kwargs)
+
+                results = {"statusCode": 200, "body": json.dumps([{"artifacts": response}])}
+
+                logs = {
+                    "team_id": team_id,
+                    "requestId": request_id,
+                    "model_id": model_id,
+                    "inputTokens": None,
+                    "outputTokens": None,
+                    "height": model_kwargs["height"] if "height" in model_kwargs else 512,
+                    "width": model_kwargs["width"] if "width" in model_kwargs else 512,
+                    "steps": model_kwargs["steps"] if "steps" in model_kwargs else 50
+                }
             else:
-                request_body = LLMInputOutputAdapter.prepare_input(provider, body["inputs"], model_kwargs)
-
-                request_body = json.dumps(request_body)
-
-                response = bedrock_client.invoke_model(
-                    body=request_body,
-                    modelId=model_id,
-                    accept="application/json",
-                    contentType="application/json"
-                )
-
-                response = LLMInputOutputAdapter.prepare_output(provider, response)
+                response = _invoke_text(bedrock_client, model_id, body, model_kwargs)
 
                 results = {"statusCode": 200, "body": json.dumps([{"generated_text": response}])}
 
-            cloudwatch_logger.info({
-                "team_id": team_id,
-                "requestId": request_id,
-                "model_id": model_id,
-                "inputTokens": _get_tokens(body["inputs"]),
-                "outputTokens": _get_tokens(response),
-            })
+                logs = {
+                    "team_id": team_id,
+                    "requestId": request_id,
+                    "model_id": model_id,
+                    "inputTokens": _get_tokens(body["inputs"]),
+                    "outputTokens": _get_tokens(response),
+                    "height": None,
+                    "width": None,
+                    "steps": None
+                }
+
+            cloudwatch_logger.info(logs)
 
             return results
         else:
