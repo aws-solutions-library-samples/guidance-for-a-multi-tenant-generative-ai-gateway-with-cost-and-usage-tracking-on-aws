@@ -4,7 +4,8 @@ In this repository, we show you how to build an internal SaaS service to access 
 
 1. [Project Description](#project-description)
 2. [API Specifications](#api-specifications)
-3. [Deploy Stack](#deploy-stack)
+3. [Reporting Costs Example](#reporting-costs-example)
+4. [Deploy Stack](#deploy-stack)
 
 ## Project Description
 
@@ -197,6 +198,16 @@ The CDK Stack creates Rest API compliant with OpenAPI specification standards.
   }
 }
 ```
+
+## Reporting Costs Example
+
+| team_id | model_id | input_tokens | output_tokens | invocations | input_cost | output_cost |
+|---------|----------|--------------|---------------|-------------|------------|-------------|
+| tenant1 | amazon.titan-tg1-large | 24000        | 2473          | 1000        | 0.0072     | 0.00099     |
+| tenant1 | anthropic.claude-v2 | 2448         | 4800          | 24          | 0.02698    | 0.15686     |
+| tenant2 | amazon.titan-tg1-large | 35000        | 52500         | 350         | 0.0105     | 0.021       |
+| tenant2 | ai21.j2-grande-instruct | 4590         | 9000          | 45          | 0.05738    | 0.1125      |
+| tenant2 | anthropic.claude-v2 | 1080         | 4400          | 20          | 0.0119     | 0.14379     |
 
 ## Deploy Stack
 
