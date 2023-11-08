@@ -241,9 +241,9 @@ Edit the global configs used in the CDK Stack. For each organizational units tha
 Execute the following commands:
 
 ```
-chmod +x deploy_stach.sh
+chmod +x deploy_stack.sh
 ```
 
 ```
-./deploy_stach.sh
+./deploy_stack.sh
 ```
