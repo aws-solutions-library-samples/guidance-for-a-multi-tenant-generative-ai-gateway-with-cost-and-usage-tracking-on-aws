@@ -1,7 +1,7 @@
 from aws_cdk import (
     App,
-    CfnParameter,
     CfnOutput,
+    Fn,
     RemovalPolicy,
     Stack,
     Tags,
@@ -41,18 +41,35 @@ class BedrockAPIStack(Stack):
         # ==================================================
         self.id = id
         self.lambdas_directory = "./../lambdas"
-        self.prefix_id = config["STACK_PREFIX"]
-        self.vpc_cidr = config["VPC_CIDR"]
+        self.prefix_id = config.get("STACK_PREFIX", None)
+        self.vpc_cidr = config.get("VPC_CIDR", None)
 
         # ==================================================
         # ================= PARAMETERS =====================
         # ==================================================
-        self.bedrock_endpoint_url = config["BEDROCK_ENDPOINT"].format(self.region)
-        self.bedrock_sdk_url = config["BEDROCK_SDK_URL"]
-        self.langchain_requirements = config["LANGCHAIN_REQUIREMENTS"]
-        self.pandas_requirements = config["PANDAS_REQUIREMENTS"]
+        self.bedrock_endpoint_url = config.get("BEDROCK_ENDPOINT", None)
+        if self.bedrock_endpoint_url is not None:
+            self.bedrock_endpoint_url = self.bedrock_endpoint_url.format(self.region)
+        self.bedrock_sdk_url = config.get("BEDROCK_SDK_URL", None)
+        self.langchain_requirements = config.get("LANGCHAIN_REQUIREMENTS", None)
+        self.pandas_requirements = config.get("PANDAS_REQUIREMENTS", None)
+        self.api_throttling_rate = config.get("API_THROTTLING_RATE", 10000)
+        self.api_burst_rate = config.get("API_BURST_RATE", 10000)
+        self.api_gw_id = config.get("API_GATEWAY_ID", None)
+        self.api_gw_resource_id = config.get("API_GATEWAY_RESOURCE_ID", None)
 
-    def build(self):
+        if self.prefix_id is None:
+            raise Exception("STACK_PREFIX not defined")
+
+        if self.vpc_cidr is not None and self.bedrock_endpoint_url is not None and self.bedrock_sdk_url is not None and self.langchain_requirements is not None and self.pandas_requirements is not None:
+            self.full_deployment = True
+        else:
+            if self.api_gw_id is not None and self.api_gw_resource_id is not None:
+                self.full_deployment = False
+            else:
+                raise Exception("API_GATEWAY_ID and API_GATEWAY_RESOURCE_ID not defined")
+
+    def build_full(self):
         # ==================================================
         # ================== IAM ROLE ======================
         # ==================================================
@@ -216,10 +233,14 @@ class BedrockAPIStack(Stack):
         api_key_class = APIKey(
             self,
             id=f"{self.prefix_id}_api_key",
+            prefix=self.prefix_id
         )
 
-        api_key_class.build(
-            api=api_gw
+        stage = api_key_class.build(
+            rest_api_id=api_gw.rest_api_id,
+            resource_id=api_gw.rest_api_root_resource_id,
+            throttling_rate=self.api_throttling_rate,
+            burst_rate=self.api_burst_rate
         )
 
         # ==================================================
@@ -245,7 +266,29 @@ class BedrockAPIStack(Stack):
             method="GET"
         )
 
-        CfnOutput(self, f"{self.prefix_id}_api_gw_url", export_name=f"{self.prefix_id}ApiGatewayUrl", value=api_gw.url)
+        CfnOutput(self, f"{self.prefix_id}_api_gw_url", export_name=f"{self.prefix_id}ApiGatewayUrl", value=stage.url_for_path(path=None))
+        CfnOutput(self, f"{self.prefix_id}_api_gw_id", export_name=f"{self.prefix_id}ApiGatewayId", value=api_gw.rest_api_id)
+        CfnOutput(self, f"{self.prefix_id}_api_gw_resource_id", export_name=f"{self.prefix_id}ApiGatewayResourceId", value=api_gw.rest_api_root_resource_id)
+
+    def build_api_key(self):
+        # ==================================================
+        # =================== API KEY ======================
+        # ==================================================
+
+        api_key_class = APIKey(
+            self,
+            id=f"{self.prefix_id}_api_key",
+            prefix=self.prefix_id
+        )
+
+        stage = api_key_class.build(
+            rest_api_id=self.api_gw_id,
+            resource_id=self.api_gw_resource_id,
+            throttling_rate=self.api_throttling_rate,
+            burst_rate=self.api_burst_rate
+        )
+
+        CfnOutput(self, f"{self.prefix_id}_api_gw_url", export_name=f"{self.prefix_id}ApiGatewayUrl", value=stage.url_for_path(path=None))
 
 # ==================================================
 # ============== STACK WITH COST CENTER ============
@@ -262,7 +305,10 @@ for config in configs:
         config=config
     )
 
-    api_stack.build()
+    if api_stack.full_deployment:
+        api_stack.build_full()
+    else:
+        api_stack.build_api_key()
 
     # Add a cost tag to all constructs in the stack
     Tags.of(api_stack).add("Tenant", api_stack.prefix_id)

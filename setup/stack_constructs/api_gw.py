@@ -23,7 +23,8 @@ class APIGW(Construct):
         api = apigw.RestApi(
             scope=self,
             id=f"{self.id}_api_gateway",
-            rest_api_name=self.api_gw_name
+            rest_api_name=self.api_gw_name,
+            deploy=False
         )
 
         api.timeout = Duration.seconds(300)
