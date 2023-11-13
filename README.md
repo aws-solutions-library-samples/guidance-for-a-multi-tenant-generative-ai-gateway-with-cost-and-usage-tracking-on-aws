@@ -298,6 +298,7 @@ chmod +x deploy_stach.sh
 
 ```
 ./deploy_stach.sh
+```
 
 ## Reading resources
 For additional reading, refer [Create a Generative AI Gateway to allow secure and compliant consumption of foundation models](https://aws.amazon.com/blogs/machine-learning/create-a-generative-ai-gateway-to-allow-secure-and-compliant-consumption-of-foundation-models/)
