@@ -6,6 +6,7 @@
     "LANGCHAIN_REQUIREMENTS": "aws-lambda-powertools langchain==0.0.309 pydantic PyYaml",
     "PANDAS_REQUIREMENTS": "pandas",
     "VPC_CIDR": "10.10.0.0/16",
-    "BEDROCK_REGION":"{ENTER_PREFERRED_BEDROCK_REGION}"
+    "API_THROTTLING_RATE": 10000,
+    "API_BURST_RATE": 5000
   }
 ]

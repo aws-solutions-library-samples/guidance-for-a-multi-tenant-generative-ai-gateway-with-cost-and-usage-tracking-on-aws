@@ -6,21 +6,32 @@ In this repository, we show you how to build an internal SaaS service to access 
 2. [API Specifications](#api-specifications)
 3. [Reporting Costs Example](#reporting-costs-example)
 4. [Deploy Stack](#deploy-stack)
+   1. [Full Deployment](#full-deployment)
+   2. [API Key Deployment](#api-key-deployment)
 
 ## Project Description
 
 Multiple tenants within an enterprise could simply reflect to multiple teams or projects accessing LLMs via REST APIs just like other SaaS services. IT teams can add additional governance and controls over this SaaS layer. In this cdk example, we focus specifically on showcasing multiple tenants with different cost centers accessing the service via API gateway. An internal service is responsible to perform usage and cost tracking per tenant and aggregate that cost for reporting. Additionally, the API layer is updated to allow equal usage across all tenants to match the on-demand limits of the Bedrock service. The cdk template provided here deploys all the required resources to the AWS account. 
 
-![IMAGE_DESCRIPTION](images/architecture.png)
+![Architecture](images/architecture.png)
 
-The CDK Stack deploys the following resources : 
+The CDK Stack provides the following deployments:
+
+#### Full Deployment: It deploys the following resources:
+
 1. Private Networking environment with VPC, Private Subnets, VPC Endpoints for Lambda, API Gateway, and Amazon Bedrock
-2. API gateway
-2. Lambda functions  to list foundation models on Bedrock and invoke models on Bedrock 
-3. Lambda function to aggregate usage and cost metering 
-4. EventBridge to trigger the metering aggregation on a regular frequency
-5. S3 buckets to store the metering output
-6. Cloudwatch logs to collect logs from Lambda invocations
+2. API Gateway Rest API
+3. API Gateway Usage Plan
+4. API Gateway Key 
+5. Lambda functions  to list foundation models on Bedrock and invoke models on Bedrock 
+6. Lambda function to aggregate usage and cost metering 
+7. EventBridge to trigger the metering aggregation on a regular frequency 
+8. S3 buckets to store the metering output 
+9. Cloudwatch logs to collect logs from Lambda invocations
+
+#### API Key Deployment: It deploys the following resources:
+1. API Gateway Usage Plan
+2. API Gateway Key 
 
 Sample notebook in the notebooks folder can be used to invoke Bedrock as either one of the teams/cost_center. API gateway then routes the request to the Bedrock lambda that invokes Bedrock and logs the usage metrics to cloudwatch. EventBridge triggers the metering lambda on a regular frequnecy to aggregate metrics from the cloudwatch logs and generate aggregate usage and cost metrics for the chosen granularity level. The metrics are stored in S3 and can further be visualized with custom reports. 
 
@@ -211,7 +222,9 @@ The CDK Stack creates Rest API compliant with OpenAPI specification standards.
 
 ## Deploy Stack
 
-### Step 1
+### Full Deployment
+
+#### Step 1
 
 Edit the global configs used in the CDK Stack. For each organizational units that requires a dedicated multi-tenant SaaS environment, create an entry in [setup/configs.json](./setup/configs.json)
 
@@ -223,7 +236,9 @@ Edit the global configs used in the CDK Stack. For each organizational units tha
     "BEDROCK_SDK_URL": "https://d2eo22ngex1n9g.cloudfront.net/Documentation/SDK/bedrock-python-sdk.zip", # URL for the Boto3 SDK
     "LANGCHAIN_REQUIREMENTS": "aws-lambda-powertools langchain==0.0.309 pydantic PyYaml", # python modules installed for langchain layer
     "PANDAS_REQUIREMENTS": "pandas", # python modules installed for pandas layer
-    "VPC_CIDR": "10.10.0.0/16" # CIDR used for the private VPC Env
+    "VPC_CIDR": "10.10.0.0/16" # CIDR used for the private VPC Env,
+    "API_THROTTLING_RATE": 10000, #Throttling limit assigned to the usage plan
+    "API_BURST_RATE": 5000 # Burst limit assigned to the usage plan
   },
   {
     "STACK_PREFIX": "" # unit 2 with dedicated SaaS resources,
@@ -231,19 +246,59 @@ Edit the global configs used in the CDK Stack. For each organizational units tha
     "BEDROCK_SDK_URL": "https://d2eo22ngex1n9g.cloudfront.net/Documentation/SDK/bedrock-python-sdk.zip", # URL for the Boto3 SDK
     "LANGCHAIN_REQUIREMENTS": "aws-lambda-powertools langchain==0.0.309 pydantic PyYaml", # python modules installed for langchain layer
     "PANDAS_REQUIREMENTS": "pandas", # python modules installed for pandas layer
-    "VPC_CIDR": "10.20.0.0/16" # CIDR used for the private VPC Env
+    "VPC_CIDR": "10.20.0.0/16" # CIDR used for the private VPC Env,
+    "API_THROTTLING_RATE": 10000,
+    "API_BURST_RATE": 5000
   },
 ]
 ```
 
-### Step 2
+#### Step 2
 
 Execute the following commands:
 
 ```
-chmod +x deploy_stach.sh
+chmod +x deploy_stack.sh
 ```
 
 ```
-./deploy_stach.sh
+./deploy_stack.sh
 ```
+
+### API Key Deployment
+
+#### Step 1
+
+Edit the global configs used in the CDK Stack. For each organizational units that requires a dedicated API Key associated to a crated API Gateway REST API, create an entry in [setup/configs.json](./setup/configs.json)
+
+```
+[
+  {
+    "STACK_PREFIX": "", # unit 1 with dedicated SaaS resources
+    "API_GATEWAY_ID": "", # Rest API ID
+    "API_GATEWAY_RESOURCE_ID": "", # Resource ID of the Rest API
+    "API_THROTTLING_RATE": 10000, #Throttling limit assigned to the usage plan
+    "API_BURST_RATE": 5000 # Burst limit assigned to the usage plan
+    
+  }
+]
+```
+
+![Rest API Id](images/api_id.png)
+
+![Resource Id](images/resource_id.png)
+
+#### Step 2
+
+Execute the following commands:
+
+```
+chmod +x deploy_stack.sh
+```
+
+```
+./deploy_stack.sh
+```
+
+## Reading resources
+For additional reading, refer [Create a Generative AI Gateway to allow secure and compliant consumption of foundation models](https://aws.amazon.com/blogs/machine-learning/create-a-generative-ai-gateway-to-allow-secure-and-compliant-consumption-of-foundation-models/)
