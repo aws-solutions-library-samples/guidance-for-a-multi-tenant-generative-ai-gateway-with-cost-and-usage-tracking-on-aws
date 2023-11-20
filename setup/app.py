@@ -47,6 +47,7 @@ class BedrockAPIStack(Stack):
         # ==================================================
         # ================= PARAMETERS =====================
         # ==================================================
+
         self.bedrock_endpoint_url = config.get("BEDROCK_ENDPOINT", None)
         if self.bedrock_endpoint_url is not None:
             self.bedrock_endpoint_url = self.bedrock_endpoint_url.format(self.region)
@@ -156,7 +157,8 @@ class BedrockAPIStack(Stack):
             memory=512,
             timeout=900,
             environment={
-                "BEDROCK_URL": "https://bedrock-runtime.us-east-1.amazonaws.com",
+                "BEDROCK_URL": self.bedrock_endpoint_url,
+                "BEDROCK_REGION": self.region
             },
             vpc=vpc,
             subnets=[private_subnet1, private_subnet2],
@@ -170,7 +172,8 @@ class BedrockAPIStack(Stack):
             memory=512,
             timeout=900,
             environment={
-                "BEDROCK_URL": self.bedrock_endpoint_url
+                "BEDROCK_URL": self.bedrock_endpoint_url,
+                "BEDROCK_REGION": self.region
             },
             vpc=vpc,
             subnets=[private_subnet1, private_subnet2],
