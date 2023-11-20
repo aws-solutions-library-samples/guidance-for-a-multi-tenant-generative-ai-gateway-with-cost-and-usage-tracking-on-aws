@@ -1,10 +1,11 @@
 [
   {
-    "STACK_PREFIX": "",
-    "BEDROCK_ENDPOINT": "https://bedrock-runtime.{}.amazonaws.com",
+    "STACK_PREFIX": "{ENTER_PREFERRED_STACK_NAME_PREFIX}",
+    "BEDROCK_ENDPOINT": "https://bedrock-runtime.{ENTER_PREFERRED_BEDROCK_REGION}.amazonaws.com",
     "BEDROCK_SDK_URL": "https://d2eo22ngex1n9g.cloudfront.net/Documentation/SDK/bedrock-python-sdk.zip",
     "LANGCHAIN_REQUIREMENTS": "aws-lambda-powertools langchain==0.0.309 pydantic PyYaml",
     "PANDAS_REQUIREMENTS": "pandas",
-    "VPC_CIDR": "10.10.0.0/16"
+    "VPC_CIDR": "10.10.0.0/16",
+    "BEDROCK_REGION":"{ENTER_PREFERRED_BEDROCK_REGION}"
   }
 ]
