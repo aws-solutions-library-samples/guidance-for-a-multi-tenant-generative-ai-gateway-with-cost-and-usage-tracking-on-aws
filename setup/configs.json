@@ -3,7 +3,7 @@
     "STACK_PREFIX": "",
     "BEDROCK_ENDPOINT": "https://bedrock-runtime.{}.amazonaws.com",
     "BEDROCK_SDK_URL": "https://d2eo22ngex1n9g.cloudfront.net/Documentation/SDK/bedrock-python-sdk.zip",
-    "LANGCHAIN_REQUIREMENTS": "aws-lambda-powertools langchain==0.0.309 pydantic PyYaml",
+    "LANGCHAIN_REQUIREMENTS": "aws-lambda-powertools langchain==0.0.340 pydantic PyYaml",
     "PANDAS_REQUIREMENTS": "pandas",
     "VPC_CIDR": "10.10.0.0/16",
     "API_THROTTLING_RATE": 10000,

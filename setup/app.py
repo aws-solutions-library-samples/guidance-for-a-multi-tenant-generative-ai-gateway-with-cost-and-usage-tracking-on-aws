@@ -47,7 +47,6 @@ class BedrockAPIStack(Stack):
         # ==================================================
         # ================= PARAMETERS =====================
         # ==================================================
-
         self.bedrock_endpoint_url = config.get("BEDROCK_ENDPOINT", None)
         if self.bedrock_endpoint_url is not None:
             self.bedrock_endpoint_url = self.bedrock_endpoint_url.format(self.region)
