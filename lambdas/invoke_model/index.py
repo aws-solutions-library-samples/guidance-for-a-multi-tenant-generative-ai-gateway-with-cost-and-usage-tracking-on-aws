@@ -20,6 +20,7 @@ bedrock_region = os.environ.get("BEDROCK_REGION", "us-east-1")
 bedrock_role = os.environ.get("BEDROCK_ROLE", None)
 bedrock_url = os.environ.get("BEDROCK_URL", None)
 
+
 def _get_bedrock_client():
     try:
         logger.info(f"Create new client\n  Using region: {bedrock_region}")
@@ -69,14 +70,27 @@ def _get_bedrock_client():
 
         raise e
 
+
 def _get_tokens(string):
     logger.info("Counting approximation tokens")
 
-    return math.floor(len(string)/4)
+    return math.floor(len(string) / 4)
+
 
 def _invoke_embeddings(bedrock_client, model_id, body, model_kwargs):
     try:
-        request_body = {**model_kwargs, "inputText": body["inputs"]}
+        provider = model_id.split(".")[0]
+
+        if provider == "cohere":
+            if "input_type" not in model_kwargs.keys():
+                model_kwargs["input_type"] = "search_document"
+            if isinstance(body["inputs"], str):
+                body["inputs"] = [body["inputs"]]
+
+            request_body = {**model_kwargs, "texts": body["inputs"]}
+        else:
+            request_body = {**model_kwargs, "inputText": body["inputs"]}
+
         request_body = json.dumps(request_body)
 
         response = bedrock_client.invoke_model(
@@ -87,7 +101,11 @@ def _invoke_embeddings(bedrock_client, model_id, body, model_kwargs):
         )
 
         response_body = json.loads(response.get("body").read())
-        response = response_body.get("embedding")
+
+        if provider == "cohere":
+            response = response_body.get("embeddings")[0]
+        else:
+            response = response_body.get("embedding")
 
         return response
     except Exception as e:
@@ -96,6 +114,7 @@ def _invoke_embeddings(bedrock_client, model_id, body, model_kwargs):
         logger.error(stacktrace)
 
         raise e
+
 
 def _invoke_image(bedrock_client, model_id, body, model_kwargs):
     try:
@@ -119,6 +138,7 @@ def _invoke_image(bedrock_client, model_id, body, model_kwargs):
         logger.error(stacktrace)
 
         raise e
+
 
 def _invoke_text(bedrock_client, model_id, body, model_kwargs):
     try:
@@ -145,9 +165,11 @@ def _invoke_text(bedrock_client, model_id, body, model_kwargs):
 
         raise e
 
+
 def lambda_handler(event, context):
     try:
-        if "team_id" in event["headers"] and event["headers"]["team_id"] is not None and event["headers"]["team_id"] != "":
+        if "team_id" in event["headers"] and event["headers"]["team_id"] is not None and event["headers"][
+            "team_id"] != "":
             bedrock_client = _get_bedrock_client()
 
             logger.info(event)
@@ -180,6 +202,8 @@ def lambda_handler(event, context):
             model_kwargs = body["parameters"] if "parameters" in body else {}
 
             if embeddings:
+                logger.info("Request type: embeddings")
+
                 response = _invoke_embeddings(bedrock_client, model_id, body, model_kwargs)
 
                 results = {"statusCode": 200, "body": json.dumps([{"embedding": response}])}
@@ -195,6 +219,8 @@ def lambda_handler(event, context):
                     "steps": None
                 }
             elif image:
+                logger.info("Request type: image")
+
                 response = _invoke_image(bedrock_client, model_id, body, model_kwargs)
 
                 results = {"statusCode": 200, "body": json.dumps([{"artifacts": response}])}
@@ -210,6 +236,8 @@ def lambda_handler(event, context):
                     "steps": model_kwargs["steps"] if "steps" in model_kwargs else 50
                 }
             else:
+                logger.info("Request type: text")
+
                 response = _invoke_text(bedrock_client, model_id, body, model_kwargs)
 
                 results = {"statusCode": 200, "body": json.dumps([{"generated_text": response}])}
