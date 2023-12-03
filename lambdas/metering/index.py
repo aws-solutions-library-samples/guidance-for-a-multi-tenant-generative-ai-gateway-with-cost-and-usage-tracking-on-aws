@@ -20,10 +20,11 @@ s3_resource = boto3.resource('s3')
 
 QUERY_API = """
 fields 
-message.team_id as team_id, 
-message.request_id as request_id, 
-message.model_id as model_id, 
-message.inputTokens as input_tokens, 
+message.team_id as team_id,
+message.requestId as request_id,
+message.region as region,
+message.model_id as model_id,
+message.inputTokens as input_tokens,
 message.outputTokens as output_tokens,
 message.height as height,
 message.width as width,

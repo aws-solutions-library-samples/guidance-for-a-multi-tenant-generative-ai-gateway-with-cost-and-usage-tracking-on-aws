@@ -1,0 +1,150 @@
+{
+  "text": {
+      "amazon.titan-text-lite-v1": {
+          "us-east-1": {"input_cost": 0.0003, "output_cost": 0.0004},
+          "us-west-2": {"input_cost": 0.0003, "output_cost": 0.0004}
+      },
+      "amazon.titan-text-express-v1": {
+          "us-east-1": {"input_cost": 0.0008, "output_cost": 0.0016},
+          "us-west-2": {"input_cost": 0.0008, "output_cost": 0.0016},
+          "ap-northeast-1": {"input_cost": 0.0011, "output_cost": 0.0022},
+          "eu-central-1": {"input_cost": 0.0012, "output_cost": 0.0023}
+      },
+      "ai21.j2-ultra-v1": {
+          "us-east-1": {"input_cost": 0.0188, "output_cost": 0.0125},
+          "us-west-2": {"input_cost": 0.0188, "output_cost": 0.0125},
+          "ap-northeast-1": {"input_cost": 0.0188, "output_cost": 0.0125},
+          "eu-central-1": {"input_cost": 0.0188, "output_cost": 0.0125}
+      },
+      "ai21.j2-mid-v1": {
+          "us-east-1": {"input_cost": 0.0125, "output_cost": 0.0188},
+          "us-west-2": {"input_cost": 0.0125, "output_cost": 0.0188},
+          "ap-northeast-1": {"input_cost": 0.0125, "output_cost": 0.0188},
+          "eu-central-1": {"input_cost": 0.0125, "output_cost": 0.0188}
+      },
+      "anthropic.claude-instant-v1": {
+          "us-east-1": {"input_cost": 0.00163, "output_cost": 0.00551},
+          "us-west-2": {"input_cost": 0.00163, "output_cost": 0.00551},
+          "ap-southeast-1": {"input_cost": 0.00223, "output_cost": 0.00755},
+          "ap-northeast-1": {"input_cost": 0.00223, "output_cost": 0.00755},
+          "eu-central-1": {"input_cost": 0.00248, "output_cost": 0.00838}
+      },
+      "anthropic.claude-v1": {
+          "us-east-1": {"input_cost": 0.00800, "output_cost": 0.02400},
+          "us-west-2": {"input_cost": 0.00800, "output_cost": 0.02400},
+          "ap-southeast-1": {"input_cost": 0.00800, "output_cost": 0.02400},
+          "ap-northeast-1": {"input_cost": 0.00800, "output_cost": 0.02400},
+          "eu-central-1": {"input_cost": 0.00800, "output_cost": 0.02400}
+      },
+      "anthropic.claude-v2": {
+          "us-east-1": {"input_cost": 0.00800, "output_cost": 0.02400},
+          "us-west-2": {"input_cost": 0.00800, "output_cost": 0.02400},
+          "ap-northeast-1": {"input_cost": 0.00800, "output_cost": 0.02400},
+          "eu-central-1": {"input_cost": 0.00800, "output_cost": 0.02400}
+      },
+      "anthropic.claude-v2:1": {
+          "us-east-1": {"input_cost": 0.00800, "output_cost": 0.02400},
+          "us-west-2": {"input_cost": 0.00800, "output_cost": 0.02400},
+          "ap-northeast-1": {"input_cost": 0.00800, "output_cost": 0.02400},
+          "eu-central-1": {"input_cost": 0.00800, "output_cost": 0.02400}
+      },
+      "cohere.command-text-v14": {
+          "us-east-1": {"input_cost": 0.0015, "output_cost": 0.0020},
+          "us-west-2": {"input_cost": 0.0015, "output_cost": 0.0020},
+          "ap-northeast-1": {"input_cost": 0.0015, "output_cost": 0.0020},
+          "eu-central-1": {"input_cost": 0.0015, "output_cost": 0.0020}
+      },
+      "cohere.command-light-text-v14": {
+          "us-east-1": {"input_cost": 0.0003, "output_cost": 0.0006},
+          "us-west-2": {"input_cost": 0.0003, "output_cost": 0.0006},
+          "ap-northeast-1": {"input_cost": 0.0003, "output_cost": 0.0006},
+          "eu-central-1": {"input_cost": 0.0003, "output_cost": 0.0006}
+      },
+      "meta.llama2-13b-chat-v1": {
+          "us-east-1": {"input_cost": 0.00075, "output_cost": 0.00100},
+          "us-west-2": {"input_cost": 0.00075, "output_cost": 0.00100},
+          "ap-northeast-1": {"input_cost": 0.00075, "output_cost": 0.00100},
+          "eu-central-1": {"input_cost": 0.00075, "output_cost": 0.00100}
+      },
+      "meta.llama2-70b-chat-v1": {
+          "us-east-1": {"input_cost": 0.00195, "output_cost": 0.00256},
+          "us-west-2": {"input_cost": 0.00195, "output_cost": 0.00256},
+          "ap-northeast-1": {"input_cost": 0.00195, "output_cost": 0.00256},
+          "eu-central-1": {"input_cost": 0.00195, "output_cost": 0.00256}
+      }
+  },
+  "embeddings": {
+      "amazon.titan-embed-text-v1": {
+          "us-east-1": {"input_cost": 0.0001, "output_cost": 0},
+          "us-west-2": {"input_cost": 0.0001, "output_cost": 0},
+          "ap-northeast-1": {"input_cost": 0.0002, "output_cost": 0},
+          "eu-central-1": {"input_cost": 0.0002, "output_cost": 0}
+      },
+      "amazon.titan-embed-image-v1": {
+          "us-east-1": {"input_cost": 0.0008, "output_cost": 0},
+          "us-west-2": {"input_cost": 0.0008, "output_cost": 0}
+      },
+      "amazon.titan-embed-image-v1-image": {
+          "us-east-1": {"input_cost": 0.00006, "output_cost": 0},
+          "us-west-2": {"input_cost": 0.00006, "output_cost": 0}
+      },
+      "cohere.embed-english-v3": {
+          "us-east-1": {"input_cost": 0.0001, "output_cost": 0},
+          "us-west-2": {"input_cost": 0.0001, "output_cost": 0},
+          "ap-northeast-1": {"input_cost": 0.0001, "output_cost": 0},
+          "eu-central-1": {"input_cost": 0.0001, "output_cost": 0}
+      },
+      "cohere.embed-multilingual-v3": {
+          "us-east-1": {"input_cost": 0.0001, "output_cost": 0},
+          "us-west-2": {"input_cost": 0.0001, "output_cost": 0},
+          "ap-northeast-1": {"input_cost": 0.0001, "output_cost": 0},
+          "eu-central-1": {"input_cost": 0.0001, "output_cost": 0}
+      }
+  },
+  "image": {
+      "amazon.titan-image-generator-v1": {
+          "us-east-1": {
+              "512x512": {
+                  "standard": 0.008,
+                  "premium": 0.01
+              },
+              "larger": {
+                 "standard": 0.01,
+                 "premium": 0.012
+              }
+          },
+          "us-west-2": {
+              "512x512": {
+                  "standard": 0.008,
+                  "premium": 0.01
+              },
+              "larger": {
+                 "standard": 0.01,
+                 "premium": 0.012
+              }
+          }
+      },
+      "stability.stable-diffusion-xl": {
+          "us-east-1": {
+              "512x512": {
+                  "standard": 0.018,
+                  "premium": 0.036
+              },
+              "larger": {
+                 "standard": 0.036,
+                 "premium": 0.072
+              }
+          },
+          "us-west-2": {
+              "512x512": {
+                  "standard": 0.018,
+                  "premium": 0.036
+              },
+              "larger": {
+                 "standard": 0.036,
+                 "premium": 0.072
+              }
+          }
+      }
+  }
+}
