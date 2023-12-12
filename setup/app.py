@@ -1,7 +1,6 @@
 from aws_cdk import (
     App,
     CfnOutput,
-    Fn,
     RemovalPolicy,
     Stack,
     Tags,
@@ -12,6 +11,7 @@ import json
 from stack_constructs.api import API
 from stack_constructs.api_gw import APIGW
 from stack_constructs.api_key import APIKey
+from stack_constructs.dynamodb import DynamoDB
 from stack_constructs.iam import IAM
 from stack_constructs.lambda_function import LambdaFunction
 from stack_constructs.lambda_layer import LambdaLayer
@@ -96,6 +96,17 @@ class BedrockAPIStack(Stack):
         )
 
         # ==================================================
+        # =================== DYNAMODB =====================
+        # ==================================================
+
+        dynamodb_class = DynamoDB(
+            scope=self,
+            id="dynamodb_stack",
+        )
+
+        table = dynamodb_class.build()
+
+        # ==================================================
         # =============== LAMBDA LAYERS ====================
         # ==================================================
 
@@ -150,6 +161,22 @@ class BedrockAPIStack(Stack):
             role=iam_role.role_name,
         )
 
+        bedrock_invoke_model_streaming = lambda_function.build(
+            function_name=f"{self.prefix_id}_bedrock_invoke_model_streaming",
+            code_dir=f"{self.lambdas_directory}/invoke_model_streaming",
+            memory=512,
+            timeout=900,
+            environment={
+                "BEDROCK_URL": self.bedrock_endpoint_url,
+                "BEDROCK_REGION": self.region,
+                "TABLE_NAME": table.table_name
+            },
+            vpc=vpc,
+            subnets=[private_subnet1, private_subnet2],
+            security_groups=[security_group],
+            layers=[boto3_layer, langchain_layer]
+        )
+
         bedrock_invoke_model = lambda_function.build(
             function_name=f"{self.prefix_id}_bedrock_invoke_model",
             code_dir=f"{self.lambdas_directory}/invoke_model",
@@ -157,7 +184,9 @@ class BedrockAPIStack(Stack):
             timeout=900,
             environment={
                 "BEDROCK_URL": self.bedrock_endpoint_url,
-                "BEDROCK_REGION": self.region
+                "BEDROCK_REGION": self.region,
+                "LAMBDA_STREAMING": bedrock_invoke_model_streaming.function_name,
+                "TABLE_NAME": table.table_name
             },
             vpc=vpc,
             subnets=[private_subnet1, private_subnet2],

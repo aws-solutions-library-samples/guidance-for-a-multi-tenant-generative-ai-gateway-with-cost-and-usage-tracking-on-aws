@@ -23,11 +23,14 @@ The CDK Stack provides the following deployments:
 2. API Gateway Rest API
 3. API Gateway Usage Plan
 4. API Gateway Key 
-5. Lambda functions  to list foundation models on Bedrock and invoke models on Bedrock 
-6. Lambda function to aggregate usage and cost metering 
-7. EventBridge to trigger the metering aggregation on a regular frequency 
-8. S3 buckets to store the metering output 
-9. Cloudwatch logs to collect logs from Lambda invocations
+5. Lambda functions to list foundation models on Bedrock
+6. Lambda functions to invoke models on Bedrock
+7. Lambda functions to invoke models on Bedrock with streaming response
+8. DynamoDB table for saving streaming responses asynchronously 
+9. Lambda function to aggregate usage and cost metering 
+10. EventBridge to trigger the metering aggregation on a regular frequency 
+11. S3 buckets to store the metering output 
+12. Cloudwatch logs to collect logs from Lambda invocations
 
 #### API Key Deployment: It deploys the following resources:
 1. API Gateway Usage Plan
@@ -234,7 +237,7 @@ Edit the global configs used in the CDK Stack. For each organizational units tha
     "STACK_PREFIX": "", # unit 1 with dedicated SaaS resources
     "BEDROCK_ENDPOINT": "https://bedrock-runtime.{}.amazonaws.com", # bedrock-runtime endpoint used for invoking Amazon Bedrock
     "BEDROCK_SDK_URL": "https://d2eo22ngex1n9g.cloudfront.net/Documentation/SDK/bedrock-python-sdk.zip", # URL for the Boto3 SDK
-    "LANGCHAIN_REQUIREMENTS": "aws-lambda-powertools langchain==0.0.344 pydantic PyYaml", # python modules installed for langchain layer
+    "LANGCHAIN_REQUIREMENTS": "aws-lambda-powertools langchain==0.0.349 pydantic PyYaml", # python modules installed for langchain layer
     "PANDAS_REQUIREMENTS": "pandas", # python modules installed for pandas layer
     "VPC_CIDR": "10.10.0.0/16" # CIDR used for the private VPC Env,
     "API_THROTTLING_RATE": 10000, #Throttling limit assigned to the usage plan
@@ -244,7 +247,7 @@ Edit the global configs used in the CDK Stack. For each organizational units tha
     "STACK_PREFIX": "" # unit 2 with dedicated SaaS resources,
     "BEDROCK_ENDPOINT": "https://bedrock-runtime.{}.amazonaws.com", # bedrock-runtime endpoint used for invoking Amazon Bedrock
     "BEDROCK_SDK_URL": "https://d2eo22ngex1n9g.cloudfront.net/Documentation/SDK/bedrock-python-sdk.zip", # URL for the Boto3 SDK
-    "LANGCHAIN_REQUIREMENTS": "aws-lambda-powertools langchain==0.0.344 pydantic PyYaml", # python modules installed for langchain layer
+    "LANGCHAIN_REQUIREMENTS": "aws-lambda-powertools langchain==0.0.349 pydantic PyYaml", # python modules installed for langchain layer
     "PANDAS_REQUIREMENTS": "pandas", # python modules installed for pandas layer
     "VPC_CIDR": "10.20.0.0/16" # CIDR used for the private VPC Env,
     "API_THROTTLING_RATE": 10000,

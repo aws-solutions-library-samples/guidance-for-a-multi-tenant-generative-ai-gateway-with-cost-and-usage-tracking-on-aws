@@ -27,6 +27,6 @@ class APIGW(Construct):
             deploy=False
         )
 
-        api.timeout = Duration.seconds(300)
+        #api.timeout = Duration.seconds(300)
 
         return api

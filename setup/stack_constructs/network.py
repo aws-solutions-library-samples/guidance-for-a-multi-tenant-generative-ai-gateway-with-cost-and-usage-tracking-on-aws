@@ -29,7 +29,8 @@ class Network(Construct):
             enable_dns_hostnames=True,
             enable_dns_support=True,
             gateway_endpoints={
-                "S3": ec2.GatewayVpcEndpointOptions(service=ec2.GatewayVpcEndpointAwsService.S3)
+                "S3": ec2.GatewayVpcEndpointOptions(service=ec2.GatewayVpcEndpointAwsService.S3),
+                "DynamoDB": ec2.GatewayVpcEndpointOptions(service=ec2.GatewayVpcEndpointAwsService.DYNAMODB)
             },
             subnet_configuration=[
                 ec2.SubnetConfiguration(

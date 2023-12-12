@@ -8,6 +8,9 @@ import math
 import os
 import traceback
 
+lambda_client = boto3.client('lambda')
+dynamodb = boto3.resource('dynamodb')
+
 logger = logging.getLogger(__name__)
 if len(logging.getLogger().handlers) > 0:
     logging.getLogger().setLevel(logging.INFO)
@@ -19,6 +22,8 @@ cloudwatch_logger = Logger()
 bedrock_region = os.environ.get("BEDROCK_REGION", "us-east-1")
 bedrock_role = os.environ.get("BEDROCK_ROLE", None)
 bedrock_url = os.environ.get("BEDROCK_URL", None)
+lambda_streaming = os.environ.get("LAMBDA_STREAMING", None)
+table_name = os.environ.get("TABLE_NAME", None)
 
 def _get_bedrock_client():
     try:
@@ -218,125 +223,179 @@ def _invoke_text(bedrock_client, model_id, body, model_kwargs):
 
         raise e
 
-
 def lambda_handler(event, context):
     try:
         if "team_id" in event["headers"] and event["headers"]["team_id"] is not None and event["headers"]["team_id"] != "":
             bedrock_client = _get_bedrock_client()
 
             logger.info(event)
-            model_id = event["queryStringParameters"]['model_id']
-            request_id = event['requestContext']['requestId']
+
+            custom_request_id = event["queryStringParameters"]['requestId'] if 'requestId' in event["queryStringParameters"] else None
             team_id = event["headers"]["team_id"]
 
-            ## Check for embeddings or image
-            if "type" in event["headers"]:
-                if event["headers"]["type"].lower() == "embeddings":
-                    embeddings = True
-                    embeddings_image = False
-                    image = False
-                elif event["headers"]["type"].lower() == "embeddings-image":
-                    embeddings = False
-                    embeddings_image = True
-                    image = False
-                elif event["headers"]["type"].lower() == "image":
-                    embeddings = False
-                    embeddings_image = False
-                    image = True
+            if custom_request_id is None:
+                model_id = event["queryStringParameters"]['model_id']
+                request_id = event['requestContext']['requestId']
+                streaming = event["headers"]["streaming"] if "streaming" in event["headers"] else "false"
+
+                ## Check for embeddings or image
+                if "type" in event["headers"]:
+                    if event["headers"]["type"].lower() == "embeddings":
+                        embeddings = True
+                        embeddings_image = False
+                        image = False
+                    elif event["headers"]["type"].lower() == "embeddings-image":
+                        embeddings = False
+                        embeddings_image = True
+                        image = False
+                    elif event["headers"]["type"].lower() == "image":
+                        embeddings = False
+                        embeddings_image = False
+                        image = True
+                    else:
+                        embeddings = False
+                        embeddings_image = False
+                        image = False
                 else:
                     embeddings = False
                     embeddings_image = False
                     image = False
+
+                logger.info(f"Model ID: {model_id}")
+                logger.info(f"Request ID: {request_id}")
+
+                body = json.loads(event["body"])
+
+                logger.info(f"Input body: {body}")
+
+                model_kwargs = body["parameters"] if "parameters" in body else {}
+
+                if embeddings:
+                    logger.info("Request type: embeddings")
+
+                    response = _invoke_embeddings(bedrock_client, model_id, body, model_kwargs)
+
+                    results = {"statusCode": 200, "body": json.dumps([{"embedding": response}])}
+
+                    logs = {
+                        "team_id": team_id,
+                        "requestId": request_id,
+                        "region": bedrock_region,
+                        "model_id": model_id,
+                        "inputTokens": _get_tokens(body["inputs"]),
+                        "outputTokens": _get_tokens(response),
+                        "height": None,
+                        "width": None,
+                        "steps": None
+                    }
+
+                    cloudwatch_logger.info(logs)
+                elif embeddings_image:
+                    logger.info("Request type: embeddings-image")
+
+                    response = _invoke_embeddings_image(bedrock_client, model_id, body, model_kwargs)
+
+                    results = {"statusCode": 200, "body": json.dumps([{"embedding": response}])}
+
+                    logs = {
+                        "team_id": team_id,
+                        "requestId": request_id,
+                        "region": bedrock_region,
+                        "model_id": model_id + "-image",
+                        "inputTokens": _get_tokens(body["inputs"]),
+                        "outputTokens": _get_tokens(response),
+                        "height": None,
+                        "width": None,
+                        "steps": None
+                    }
+
+                    cloudwatch_logger.info(logs)
+                elif image:
+                    logger.info("Request type: image")
+
+                    response, height, width, steps = _invoke_image(bedrock_client, model_id, body, model_kwargs)
+
+                    results = {"statusCode": 200, "body": json.dumps([response])}
+
+                    logs = {
+                        "team_id": team_id,
+                        "requestId": request_id,
+                        "region": bedrock_region,
+                        "model_id": model_id,
+                        "inputTokens": None,
+                        "outputTokens": None,
+                        "height": height,
+                        "width": width,
+                        "steps": steps
+                    }
+
+                    cloudwatch_logger.info(logs)
+                else:
+                    logger.info("Request type: text")
+
+                    if streaming in ["True", "true"] and custom_request_id is None:
+                        logger.info("Send streaming request")
+
+                        event["queryStringParameters"]['request_id'] = request_id
+
+                        lambda_client.invoke(FunctionName=lambda_streaming,
+                                             InvocationType='Event',
+                                             Payload=json.dumps(event))
+
+                        results = {"statusCode": 200, "body": json.dumps([{"request_id": request_id}])}
+                    else:
+                        response = _invoke_text(bedrock_client, model_id, body, model_kwargs)
+
+                        results = {"statusCode": 200, "body": json.dumps([{"generated_text": response}])}
+
+                        logs = {
+                            "team_id": team_id,
+                            "requestId": request_id,
+                            "region": bedrock_region,
+                            "model_id": model_id,
+                            "inputTokens": _get_tokens(body["inputs"]),
+                            "outputTokens": _get_tokens(response),
+                            "height": None,
+                            "width": None,
+                            "steps": None
+                        }
+
+                        cloudwatch_logger.info(logs)
+
+                return results
             else:
-                embeddings = False
-                embeddings_image = False
-                image = False
+                logger.info("Check streaming request")
 
-            logger.info(f"Model ID: {model_id}")
-            logger.info(f"Request ID: {request_id}")
+                connections = dynamodb.Table(table_name)
 
-            body = json.loads(event["body"])
+                response = connections.get_item(Key={"request_id": custom_request_id})
 
-            logger.info(f"Input body: {body}")
+                logger.info(f"Response: {response}")
 
-            model_kwargs = body["parameters"] if "parameters" in body else {}
+                if "Item" in response:
+                    response = response.get("Item")
 
-            if embeddings:
-                logger.info("Request type: embeddings")
+                    results = {"statusCode": 200, "body": json.dumps([{"generated_text": response["generated_text"]}])}
 
-                response = _invoke_embeddings(bedrock_client, model_id, body, model_kwargs)
+                    connections.delete_item(Key={"request_id": custom_request_id})
 
-                results = {"statusCode": 200, "body": json.dumps([{"embedding": response}])}
+                    logs = {
+                        "team_id": team_id,
+                        "requestId": custom_request_id,
+                        "region": bedrock_region,
+                        "model_id": response["model_id"],
+                        "inputTokens": _get_tokens(response["inputs"]),
+                        "outputTokens": _get_tokens(response["generated_text"]),
+                        "height": None,
+                        "width": None,
+                        "steps": None
+                    }
 
-                logs = {
-                    "team_id": team_id,
-                    "requestId": request_id,
-                    "region": bedrock_region,
-                    "model_id": model_id,
-                    "inputTokens": _get_tokens(body["inputs"]),
-                    "outputTokens": _get_tokens(response),
-                    "height": None,
-                    "width": None,
-                    "steps": None
-                }
-            elif embeddings_image:
-                logger.info("Request type: embeddings-image")
+                    cloudwatch_logger.info(logs)
+                else:
+                    results = {"statusCode": 200, "body": json.dumps([{"request_id": custom_request_id}])}
 
-                response = _invoke_embeddings_image(bedrock_client, model_id, body, model_kwargs)
-
-                results = {"statusCode": 200, "body": json.dumps([{"embedding": response}])}
-
-                logs = {
-                    "team_id": team_id,
-                    "requestId": request_id,
-                    "region": bedrock_region,
-                    "model_id": model_id + "-image",
-                    "inputTokens": _get_tokens(body["inputs"]),
-                    "outputTokens": _get_tokens(response),
-                    "height": None,
-                    "width": None,
-                    "steps": None
-                }
-            elif image:
-                logger.info("Request type: image")
-
-                response, height, width, steps = _invoke_image(bedrock_client, model_id, body, model_kwargs)
-
-                results = {"statusCode": 200, "body": json.dumps([response])}
-
-                logs = {
-                    "team_id": team_id,
-                    "requestId": request_id,
-                    "region": bedrock_region,
-                    "model_id": model_id,
-                    "inputTokens": None,
-                    "outputTokens": None,
-                    "height": height,
-                    "width": width,
-                    "steps": steps
-                }
-            else:
-                logger.info("Request type: text")
-
-                response = _invoke_text(bedrock_client, model_id, body, model_kwargs)
-
-                results = {"statusCode": 200, "body": json.dumps([{"generated_text": response}])}
-
-                logs = {
-                    "team_id": team_id,
-                    "requestId": request_id,
-                    "region": bedrock_region,
-                    "model_id": model_id,
-                    "inputTokens": _get_tokens(body["inputs"]),
-                    "outputTokens": _get_tokens(response),
-                    "height": None,
-                    "width": None,
-                    "steps": None
-                }
-
-            cloudwatch_logger.info(logs)
-
-            return results
+                return results
         else:
             logger.error("Bad Request: Header 'team_id' is missing")
 

@@ -17,7 +17,7 @@ class IAM(Construct):
         # ==================================================
         # ================= IAM ROLE =======================
         # ==================================================
-        self.lambda_role = iam.Role(
+        lambda_role = iam.Role(
             self,
             id=f"{self.id}_role",
             assumed_by=iam.ServicePrincipal(service="lambda.amazonaws.com"),
@@ -28,7 +28,7 @@ class IAM(Construct):
             ],
         )
 
-        self.ec2_policy = iam.Policy(
+        ec2_policy = iam.Policy(
             scope=self,
             id=f"{self.id}_policy_ec2",
             policy_name="EC2Policy",
@@ -51,7 +51,22 @@ class IAM(Construct):
             ],
         )
 
-        self.s3_policy = iam.Policy(
+        lambda_policy = iam.Policy(
+            scope=self,
+            id=f"{self.id}_policy_lambda",
+            policy_name="LambdaPolicy",
+            statements=[
+                iam.PolicyStatement(
+                    effect=iam.Effect.ALLOW,
+                    actions=[
+                        'lambda:InvokeFunction'
+                    ],
+                    resources=["*"],
+                )
+            ],
+        )
+
+        s3_policy = iam.Policy(
             scope=self,
             id=f"{self.id}_policy_s3",
             policy_name="S3Policy",
@@ -68,7 +83,26 @@ class IAM(Construct):
             ],
         )
 
-        self.bedrock_policy = iam.Policy(
+        dynamodb_policy = iam.Policy(
+            scope=self,
+            id=f"{self.id}_policy_dynamodb",
+            policy_name="DynamoDBPolicy",
+            statements=[
+                iam.PolicyStatement(
+                    effect=iam.Effect.ALLOW,
+                    actions=[
+                        "dynamodb:BatchGetItem",
+                        "dynamodb:DeleteItem",
+                        "dynamodb:GetItem",
+                        "dynamodb:PutItem"
+
+                    ],
+                    resources=["*"],
+                )
+            ],
+        )
+
+        bedrock_policy = iam.Policy(
             scope=self,
             id=f"{self.id}_policy_bedrock",
             policy_name="BedrockPolicy",
@@ -76,7 +110,7 @@ class IAM(Construct):
                 iam.PolicyStatement(
                     effect=iam.Effect.ALLOW,
                     actions=[
-                        "sts:AssumeRole",
+                        "sts:AssumeRole"
                     ],
                     resources=["*"],
                 ),
@@ -90,8 +124,10 @@ class IAM(Construct):
             ],
         )
 
-        self.ec2_policy.attach_to_role(self.lambda_role)
-        self.s3_policy.attach_to_role(self.lambda_role)
-        self.bedrock_policy.attach_to_role(self.lambda_role)
+        bedrock_policy.attach_to_role(lambda_role)
+        dynamodb_policy.attach_to_role(lambda_role)
+        ec2_policy.attach_to_role(lambda_role)
+        lambda_policy.attach_to_role(lambda_role)
+        s3_policy.attach_to_role(lambda_role)
 
-        return self.lambda_role
+        return lambda_role
