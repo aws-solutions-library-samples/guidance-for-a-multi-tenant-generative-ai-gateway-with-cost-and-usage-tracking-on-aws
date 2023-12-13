@@ -13,12 +13,14 @@ class LambdaFunction(Construct):
         id: str,
         role: str,
         provisioned_concurrency: int = None,
+        dependencies: list = []
     ):
         super().__init__(scope, id)
 
         self.id = id
         self.role = role
         self.provisioned_concurrency = provisioned_concurrency
+        self.dependencies = dependencies
 
     def build(
             self,
@@ -63,5 +65,8 @@ class LambdaFunction(Construct):
                 layers=layers,
                 role=iam.Role.from_role_name(self, f"{self.id}_{function_name}_role", self.role)
             )
+
+        for el in self.dependencies:
+            fn.node.add_dependency(el)
 
         return fn

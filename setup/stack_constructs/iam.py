@@ -8,10 +8,12 @@ class IAM(Construct):
             self,
             scope: Construct,
             id: str,
+            dependencies: list = []
     ):
         super().__init__(scope, id)
 
         self.id = id
+        self.dependencies = dependencies
 
     def build(self):
         # ==================================================
@@ -129,5 +131,8 @@ class IAM(Construct):
         ec2_policy.attach_to_role(lambda_role)
         lambda_policy.attach_to_role(lambda_role)
         s3_policy.attach_to_role(lambda_role)
+
+        for el in self.dependencies:
+            lambda_role.node.add_dependency(el)
 
         return lambda_role

@@ -11,23 +11,28 @@ class LambdaFunctionScheduler(Construct):
         self,
         scope: Construct,
         id: str,
+        dependencies: list = []
     ):
         super().__init__(scope, id)
 
         self.id = id
+        self.dependencies = dependencies
 
     def build(
-            self,
-            lambda_function: lambda_.Function,
+        self,
+        lambda_function: lambda_.Function,
     ):
         # ==================================================
         # ================== SCHEDULING ====================
         # ==================================================
-        self.cron_rule = events.Rule(
+        cron_rule = events.Rule(
             scope=self,
             id=f"{self.id}_cron_rule",
             rule_name=f"{self.id}_usage_aggregator_schedule",
             schedule=events.Schedule.expression('cron(0 0 * * ? *)')
         )
 
-        self.cron_rule.add_target(target=targets.LambdaFunction(lambda_function))
+        cron_rule.add_target(target=targets.LambdaFunction(lambda_function))
+
+        for el in self.dependencies:
+            cron_rule.node.add_dependency(el)

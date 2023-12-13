@@ -5,17 +5,19 @@ from aws_cdk import (
 
 class Network(Construct):
     def __init__(
-            self,
-            scope: Construct,
-            id: str,
-            account: str,
-            region: str
+        self,
+        scope: Construct,
+        id: str,
+        account: str,
+        region: str,
+        dependencies: list = []
     ):
         super().__init__(scope, id)
 
         self.id = id
-        self.account = account,
+        self.account = account
         self.region = region
+        self.dependencies = dependencies
 
     def build(
             self,
@@ -136,5 +138,8 @@ class Network(Construct):
             subnet_ids=[private_subnet1.subnet_id, private_subnet2.subnet_id],
             vpc_endpoint_type="Interface"
         )
+
+        for el in self.dependencies:
+            vpc.node.add_dependency(el)
 
         return vpc, private_subnet1, private_subnet2, security_group

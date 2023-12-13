@@ -258,23 +258,6 @@ class BedrockAPIStack(Stack):
         api_gw = api_gw_class.build()
 
         # ==================================================
-        # =================== API KEY ======================
-        # ==================================================
-
-        api_key_class = APIKey(
-            self,
-            id=f"{self.prefix_id}_api_key",
-            prefix=self.prefix_id
-        )
-
-        stage = api_key_class.build(
-            rest_api_id=api_gw.rest_api_id,
-            resource_id=api_gw.rest_api_root_resource_id,
-            throttling_rate=self.api_throttling_rate,
-            burst_rate=self.api_burst_rate
-        )
-
-        # ==================================================
         # ================== API ROUTES ====================
         # ==================================================
 
@@ -285,16 +268,36 @@ class BedrockAPIStack(Stack):
 
         )
 
-        api_route.build(
+        api_invoke = api_route.build(
             lambda_function=bedrock_invoke_model,
             route="invoke_model",
-            method="POST"
+            method="POST",
+            validator=True
         )
 
-        api_route.build(
+        api_list = api_route.build(
             lambda_function=bedrock_list_model,
             route="list_foundation_models",
-            method="GET"
+            method="GET",
+            validator=False
+        )
+
+        # ==================================================
+        # =================== API KEY ======================
+        # ==================================================
+
+        api_key_class = APIKey(
+            self,
+            id=f"{self.prefix_id}_api_key",
+            prefix=self.prefix_id,
+            dependencies=[api_gw, api_invoke, api_list]
+        )
+
+        stage = api_key_class.build(
+            rest_api_id=api_gw.rest_api_id,
+            resource_id=api_gw.rest_api_root_resource_id,
+            throttling_rate=self.api_throttling_rate,
+            burst_rate=self.api_burst_rate
         )
 
         CfnOutput(self, f"{self.prefix_id}_api_gw_url", export_name=f"{self.prefix_id}ApiGatewayUrl", value=stage.url_for_path(path=None))

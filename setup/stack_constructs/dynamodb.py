@@ -7,11 +7,13 @@ class DynamoDB(Construct):
     def __init__(
         self,
         scope: Construct,
-        id: str
+        id: str,
+        dependencies: list = []
     ):
         super().__init__(scope, id)
 
         self.id = id
+        self.dependencies = dependencies
 
     def build(self):
         table = ddb.Table(
@@ -23,5 +25,8 @@ class DynamoDB(Construct):
             ),
             time_to_live_attribute="ttl"
         )
+
+        for el in self.dependencies:
+            table.node.add_dependency(el)
 
         return table

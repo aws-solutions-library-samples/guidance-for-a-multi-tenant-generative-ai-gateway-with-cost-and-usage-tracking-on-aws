@@ -15,13 +15,14 @@ class LambdaLayer(Construct):
             id: str,
             s3_bucket: str,
             role: str,
-            **kwargs
+            dependencies: list = []
     ) -> None:
-        super().__init__(scope, id, **kwargs)
+        super().__init__(scope, id)
 
         self.id = id
         self.s3_bucket = s3_bucket
         self.role = role
+        self.dependencies = dependencies
 
     def build(
             self,
@@ -60,5 +61,14 @@ class LambdaLayer(Construct):
                 lambda_.Runtime.PYTHON_3_8
             ]
         )
+
+        for el in self.dependencies:
+            fn.node.add_dependency(el)
+
+        for el in self.dependencies:
+            custom.node.add_dependency(el)
+
+        for el in self.dependencies:
+            layer.node.add_dependency(el)
 
         return layer

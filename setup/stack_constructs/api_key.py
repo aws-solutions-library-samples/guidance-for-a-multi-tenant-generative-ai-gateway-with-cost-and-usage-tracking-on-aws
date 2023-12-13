@@ -8,12 +8,14 @@ class APIKey(Construct):
         self,
         scope: Construct,
         id: str,
-        prefix:str
+        prefix: str,
+        dependencies: list = []
     ):
         super().__init__(scope, id)
 
         self.id = id
         self.prefix = prefix
+        self.dependencies = dependencies
 
     def build(
             self,
@@ -38,12 +40,15 @@ class APIKey(Construct):
             enabled=True
         )
 
+        # Create Deployment
+        deployment = apigw.Deployment(self, f"{self.id}_deployment", api=api)
+
         # Create Stage
 
         stage = apigw.Stage(
             self,
             f"{self.id}_stage",
-            deployment=apigw.Deployment(self, f"{self.id}_deployment", api=api),
+            deployment=deployment,
             metrics_enabled=True,
             throttling_rate_limit=throttling_rate,
             throttling_burst_limit=burst_rate,
@@ -63,5 +68,11 @@ class APIKey(Construct):
         )
 
         usage_plan.add_api_key(api_key)
+
+        for el in self.dependencies:
+            deployment.node.add_dependency(el)
+
+        for el in self.dependencies:
+            api_key.node.add_dependency(el)
 
         return stage

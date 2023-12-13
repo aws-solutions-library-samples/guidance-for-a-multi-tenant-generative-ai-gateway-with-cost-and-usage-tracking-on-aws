@@ -42,6 +42,8 @@ Sample notebook in the notebooks folder can be used to invoke Bedrock as either 
 
 The CDK Stack creates Rest API compliant with OpenAPI specification standards.
 
+The solution is currently support both Bedrock **REST** invocation and **Streaming** invocation with long polling. 
+
 ### Swagger
 
 ```

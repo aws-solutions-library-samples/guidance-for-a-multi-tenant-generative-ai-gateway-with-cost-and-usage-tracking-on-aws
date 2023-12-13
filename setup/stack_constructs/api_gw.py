@@ -10,11 +10,13 @@ class APIGW(Construct):
         scope: Construct,
         id: str,
         api_gw_name: str,
+        dependencies: list = []
     ):
         super().__init__(scope, id)
 
         self.id = id
         self.api_gw_name = api_gw_name
+        self.dependencies = dependencies
 
     def build(
             self
@@ -27,6 +29,9 @@ class APIGW(Construct):
             deploy=False
         )
 
-        #api.timeout = Duration.seconds(300)
+        # api.timeout = Duration.seconds(300)
+
+        for el in self.dependencies:
+            api.node.add_dependency(el)
 
         return api
