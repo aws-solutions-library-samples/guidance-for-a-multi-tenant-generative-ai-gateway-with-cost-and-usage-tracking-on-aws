@@ -1,6 +1,7 @@
 from constructs import Construct
 from aws_cdk import (
     aws_dynamodb as ddb,
+    RemovalPolicy
 )
 
 class DynamoDB(Construct):
@@ -23,7 +24,8 @@ class DynamoDB(Construct):
                 name="request_id",
                 type=ddb.AttributeType.STRING
             ),
-            time_to_live_attribute="ttl"
+            time_to_live_attribute="ttl",
+            removal_policy=RemovalPolicy.DESTROY
         )
 
         for el in self.dependencies:
