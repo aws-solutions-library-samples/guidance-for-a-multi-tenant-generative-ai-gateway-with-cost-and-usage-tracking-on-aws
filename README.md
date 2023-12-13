@@ -1,4 +1,4 @@
-# Build and track a internal SaaS service with Amazon Bedrock
+# Build and track a internal SaaS Gateway with Amazon Bedrock
 
 In this repository, we show you how to build an internal SaaS service to access foundation models with Amazon Bedrock in a multi-tenant architecture. An internal software as a service (SaaS) for foundation models can address governance requirements while providing a simple and consistent interface for the end users. API gateways are a common design pattern that enable consumption of services with standardization and governance. They can provide loose coupling between model consumers and the model endpoint service that gives flexibility to adapt to changing model versions, architectures and invocation methods.
 
