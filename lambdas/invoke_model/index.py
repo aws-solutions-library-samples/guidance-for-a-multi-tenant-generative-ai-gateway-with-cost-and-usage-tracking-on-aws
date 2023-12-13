@@ -375,23 +375,24 @@ def lambda_handler(event, context):
                 if "Item" in response:
                     response = response.get("Item")
 
-                    results = {"statusCode": 200, "body": json.dumps([{"generated_text": response["generated_text"]}])}
+                    results = {"statusCode": response["status"], "body": json.dumps([{"generated_text": response["generated_text"]}])}
 
                     connections.delete_item(Key={"request_id": custom_request_id})
 
-                    logs = {
-                        "team_id": team_id,
-                        "requestId": custom_request_id,
-                        "region": bedrock_region,
-                        "model_id": response["model_id"],
-                        "inputTokens": _get_tokens(response["inputs"]),
-                        "outputTokens": _get_tokens(response["generated_text"]),
-                        "height": None,
-                        "width": None,
-                        "steps": None
-                    }
+                    if response["status"] == 200:
+                        logs = {
+                            "team_id": team_id,
+                            "requestId": custom_request_id,
+                            "region": bedrock_region,
+                            "model_id": response["model_id"],
+                            "inputTokens": _get_tokens(response["inputs"]),
+                            "outputTokens": _get_tokens(response["generated_text"]),
+                            "height": None,
+                            "width": None,
+                            "steps": None
+                        }
 
-                    cloudwatch_logger.info(logs)
+                        cloudwatch_logger.info(logs)
                 else:
                     results = {"statusCode": 200, "body": json.dumps([{"request_id": custom_request_id}])}
 

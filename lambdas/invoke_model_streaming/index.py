@@ -141,6 +141,7 @@ def lambda_handler(event, context):
 
         item = {
             "request_id": request_id,
+            "status": 200,
             "generated_text": response,
             "inputs": body["inputs"],
             "model_id": model_id,
@@ -160,4 +161,21 @@ def lambda_handler(event, context):
         stacktrace = traceback.format_exc()
 
         logger.error(stacktrace)
+
+        request_id = event['queryStringParameters']['request_id'] if "request_id" in event['queryStringParameters'] else None
+
+        if request_id is not None:
+            item = {
+                "request_id": request_id,
+                "status": 500,
+                "generated_text": stacktrace,
+                "ttl": int(time.time()) + 2 * 60
+            }
+
+            connections = dynamodb.Table(table_name)
+
+            response = connections.put_item(Item=item)
+
+            logger.info(f"Put exception item: {response}")
+
         return {"statusCode": 500, "body": json.dumps([{"generated_text": stacktrace}])}
