@@ -13,7 +13,7 @@ In this repository, we show you how to build an internal SaaS service to access 
 
 Multiple tenants within an enterprise could simply reflect to multiple teams or projects accessing LLMs via REST APIs just like other SaaS services. IT teams can add additional governance and controls over this SaaS layer. In this cdk example, we focus specifically on showcasing multiple tenants with different cost centers accessing the service via API gateway. An internal service is responsible to perform usage and cost tracking per tenant and aggregate that cost for reporting. Additionally, the API layer is updated to allow equal usage across all tenants to match the on-demand limits of the Bedrock service. The cdk template provided here deploys all the required resources to the AWS account. 
 
-![Architecture](images/architecture.png)
+![Architecture](images/architecture_new.png)
 
 The CDK Stack provides the following deployments:
 
