@@ -49,9 +49,7 @@ class API(Construct):
                 request_parameters={
                     "method.request.header.team_id": True,
                     "method.request.header.streaming": False,
-                    "method.request.header.type": False,
-                    "method.request.querystring.model_id": True,
-                    "method.request.querystring.requestId": False
+                    "method.request.header.type": False
                 },
                 request_validator_options={
                     "request_validator_name": "parameter-validator",

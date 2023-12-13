@@ -50,16 +50,32 @@ The solution is currently support both Bedrock **REST** invocation and **Streami
 {
   "swagger" : "2.0",
   "info" : {
-    "version" : "2023-11-02T18:22:47Z",
+    "version" : "2023-12-13T12:12:15Z",
     "title" : "<REST_API_NAME>"
   },
-  "host" : "<HOST>.execute-api.<REGION>.amazonaws.com",
+  "host" : "<HOST>>.execute-api.<REGION>.amazonaws.com",
   "basePath" : "/prod",
   "schemes" : [ "https" ],
   "paths" : {
     "/invoke_model" : {
       "post" : {
         "produces" : [ "application/json" ],
+        "parameters" : [ {
+          "name" : "streaming",
+          "in" : "header",
+          "required" : false,
+          "type" : "string"
+        }, {
+          "name" : "team_id",
+          "in" : "header",
+          "required" : true,
+          "type" : "string"
+        }, {
+          "name" : "type",
+          "in" : "header",
+          "required" : false,
+          "type" : "string"
+        } ],
         "responses" : {
           "401" : {
             "description" : "401 response",
@@ -128,7 +144,7 @@ The solution is currently support both Bedrock **REST** invocation and **Streami
   "openapi" : "3.0.1",
   "info" : {
     "title" : "<REST_API_NAME>",
-    "version" : "2023-11-02T18:22:47Z"
+    "version" : "2023-12-13T12:12:15Z"
   },
   "servers" : [ {
     "url" : "https://<HOST>.execute-api.<REGION>.amazonaws.com/{basePath}",
@@ -167,6 +183,26 @@ The solution is currently support both Bedrock **REST** invocation and **Streami
     },
     "/invoke_model" : {
       "post" : {
+        "parameters" : [ {
+          "name" : "streaming",
+          "in" : "header",
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "team_id",
+          "in" : "header",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "type",
+          "in" : "header",
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
         "responses" : {
           "401" : {
             "description" : "401 response",
