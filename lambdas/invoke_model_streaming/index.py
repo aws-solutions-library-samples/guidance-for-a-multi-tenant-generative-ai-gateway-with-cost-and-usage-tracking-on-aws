@@ -80,16 +80,7 @@ def _invoke_text_streaming(bedrock_client, model_id, body, model_kwargs):
 
         request_body = json.dumps(request_body)
 
-        response = bedrock_client.invoke_model_with_response_stream(
-            body=request_body,
-            modelId=model_id,
-            accept="application/json",
-            contentType="application/json"
-        )
-
-        response = LLMInputOutputAdapter.prepare_output_stream(provider, response)
-
-        return "".join([chunk.text for chunk in response])
+        return _stream(bedrock_client, model_id, request_body)
 
     except Exception as e:
         stacktrace = traceback.format_exc()
@@ -98,12 +89,12 @@ def _invoke_text_streaming(bedrock_client, model_id, body, model_kwargs):
 
         raise e
 
-def _stream(bedrock_client, model_id, body):
+def _stream(bedrock_client, model_id, request_body):
     try:
         provider = model_id.split(".")[0]
 
         response = bedrock_client.invoke_model_with_response_stream(
-            body=body,
+            body=request_body,
             modelId=model_id,
             accept="application/json",
             contentType="application/json",
@@ -137,7 +128,13 @@ def lambda_handler(event, context):
 
         model_kwargs = body["parameters"] if "parameters" in body else {}
 
-        response = _invoke_text_streaming(bedrock_client, model_id, body, model_kwargs)
+        response = ""
+        for chunk in _invoke_text_streaming(
+                bedrock_client, model_id, body, model_kwargs
+        ):
+            response += chunk.text
+
+        logger.info(f"Answer: {response}")
 
         item = {
             "request_id": request_id,
