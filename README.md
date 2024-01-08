@@ -274,7 +274,7 @@ Edit the global configs used in the CDK Stack. For each organizational units tha
   {
     "STACK_PREFIX": "", # unit 1 with dedicated SaaS resources
     "BEDROCK_ENDPOINT": "https://bedrock-runtime.{}.amazonaws.com", # bedrock-runtime endpoint used for invoking Amazon Bedrock
-    "BEDROCK_SDK_URL": "https://d2eo22ngex1n9g.cloudfront.net/Documentation/SDK/bedrock-python-sdk.zip", # URL for the Boto3 SDK
+    "BEDROCK_REQUIREMENTS": "boto3>=1.28.57 awscli>=1.29.57 botocore>=1.31.57", # Requirements for Amazon Bedrock
     "LANGCHAIN_REQUIREMENTS": "aws-lambda-powertools langchain==0.0.349 pydantic PyYaml", # python modules installed for langchain layer
     "PANDAS_REQUIREMENTS": "pandas", # python modules installed for pandas layer
     "VPC_CIDR": "10.10.0.0/16" # CIDR used for the private VPC Env,
@@ -284,7 +284,7 @@ Edit the global configs used in the CDK Stack. For each organizational units tha
   {
     "STACK_PREFIX": "" # unit 2 with dedicated SaaS resources,
     "BEDROCK_ENDPOINT": "https://bedrock-runtime.{}.amazonaws.com", # bedrock-runtime endpoint used for invoking Amazon Bedrock
-    "BEDROCK_SDK_URL": "https://d2eo22ngex1n9g.cloudfront.net/Documentation/SDK/bedrock-python-sdk.zip", # URL for the Boto3 SDK
+    "BEDROCK_REQUIREMENTS": "boto3>=1.28.57 awscli>=1.29.57 botocore>=1.31.57", # Requirements for Amazon Bedrock
     "LANGCHAIN_REQUIREMENTS": "aws-lambda-powertools langchain==0.0.349 pydantic PyYaml", # python modules installed for langchain layer
     "PANDAS_REQUIREMENTS": "pandas", # python modules installed for pandas layer
     "VPC_CIDR": "10.20.0.0/16" # CIDR used for the private VPC Env,

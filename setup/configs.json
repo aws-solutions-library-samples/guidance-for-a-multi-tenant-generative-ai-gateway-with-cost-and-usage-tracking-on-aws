@@ -2,7 +2,7 @@
   {
     "STACK_PREFIX": "",
     "BEDROCK_ENDPOINT": "https://bedrock-runtime.{}.amazonaws.com",
-    "BEDROCK_SDK_URL": "https://d2eo22ngex1n9g.cloudfront.net/Documentation/SDK/bedrock-python-sdk.zip",
+    "BEDROCK_REQUIREMENTS": "boto3>=1.28.57 awscli>=1.29.57 botocore>=1.31.57",
     "LANGCHAIN_REQUIREMENTS": "aws-lambda-powertools langchain==0.0.349 pydantic PyYaml",
     "PANDAS_REQUIREMENTS": "pandas",
     "VPC_CIDR": "10.10.0.0/16",

@@ -50,7 +50,7 @@ class BedrockAPIStack(Stack):
         self.bedrock_endpoint_url = config.get("BEDROCK_ENDPOINT", None)
         if self.bedrock_endpoint_url is not None:
             self.bedrock_endpoint_url = self.bedrock_endpoint_url.format(self.region)
-        self.bedrock_sdk_url = config.get("BEDROCK_SDK_URL", None)
+        self.bedrock_requirements = config.get("BEDROCK_REQUIREMENTS", None)
         self.langchain_requirements = config.get("LANGCHAIN_REQUIREMENTS", None)
         self.pandas_requirements = config.get("PANDAS_REQUIREMENTS", None)
         self.api_throttling_rate = config.get("API_THROTTLING_RATE", 10000)
@@ -61,7 +61,7 @@ class BedrockAPIStack(Stack):
         if self.prefix_id is None:
             raise Exception("STACK_PREFIX not defined")
 
-        if self.vpc_cidr is not None and self.bedrock_endpoint_url is not None and self.bedrock_sdk_url is not None and self.langchain_requirements is not None and self.pandas_requirements is not None:
+        if self.vpc_cidr is not None and self.bedrock_endpoint_url is not None and self.bedrock_requirements is not None and self.langchain_requirements is not None and self.pandas_requirements is not None:
             self.full_deployment = True
         else:
             if self.api_gw_id is not None and self.api_gw_resource_id is not None:
@@ -126,9 +126,9 @@ class BedrockAPIStack(Stack):
 
         boto3_layer = lambda_layer.build(
             layer_name=f"{self.prefix_id}_boto3_sdk_layer",
-            code_dir=f"{self.lambdas_directory}/lambda_layer_url",
+            code_dir=f"{self.lambdas_directory}/lambda_layer_requirements",
             environments={
-                "SDK_DOWNLOAD_URL": self.bedrock_sdk_url,
+                "REQUIREMENTS": self.bedrock_requirements,
                 "S3_BUCKET": s3_bucket_layer.bucket_name
             }
         )
