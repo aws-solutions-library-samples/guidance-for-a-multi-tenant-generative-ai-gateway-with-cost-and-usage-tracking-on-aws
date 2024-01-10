@@ -27,16 +27,16 @@ The CDK Stack provides the following deployments:
 6. Lambda functions to invoke models on Bedrock
 7. Lambda functions to invoke models on Bedrock with streaming response
 8. DynamoDB table for saving streaming responses asynchronously 
-9. Lambda function to aggregate usage and cost metering 
-10. EventBridge to trigger the metering aggregation on a regular frequency 
-11. S3 buckets to store the metering output 
+9. Lambda function to aggregate usage and cost tracking 
+10. EventBridge to trigger the cost aggregation on a regular frequency 
+11. S3 buckets to store the cost tracking logs 
 12. Cloudwatch logs to collect logs from Lambda invocations
 
 #### API Key Deployment: It deploys the following resources:
 1. API Gateway Usage Plan
 2. API Gateway Key 
 
-Sample notebook in the notebooks folder can be used to invoke Bedrock as either one of the teams/cost_center. API gateway then routes the request to the Bedrock lambda that invokes Bedrock and logs the usage metrics to cloudwatch. EventBridge triggers the metering lambda on a regular frequnecy to aggregate metrics from the cloudwatch logs and generate aggregate usage and cost metrics for the chosen granularity level. The metrics are stored in S3 and can further be visualized with custom reports. 
+Sample notebook in the notebooks folder can be used to invoke Bedrock as either one of the teams/cost_center. API gateway then routes the request to the Bedrock lambda that invokes Bedrock and logs the usage metrics to cloudwatch. EventBridge triggers the cost tracking lambda on a regular frequnecy to aggregate metrics from the cloudwatch logs and generate aggregate usage and cost metrics for the chosen granularity level. The metrics are stored in S3 and can further be visualized with custom reports. 
 
 ## API Specifications
 

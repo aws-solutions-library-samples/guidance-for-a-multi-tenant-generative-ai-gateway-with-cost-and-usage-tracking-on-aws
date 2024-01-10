@@ -36,22 +36,22 @@ def process_event(event):
     try:
         # querying the cloudwatch logs from the API
         query_results_api = run_query(QUERY_API, log_group_name_api)
-        df_bedrock_metering = results_to_df(query_results_api)
+        df_bedrock_cost_tracking = results_to_df(query_results_api)
 
         # Apply the calculate_cost function to the DataFrame
-        df_bedrock_metering[["input_tokens", "output_tokens", "input_cost", "output_cost", "invocations"]] = df_bedrock_metering.apply(
+        df_bedrock_cost_tracking[["input_tokens", "output_tokens", "input_cost", "output_cost", "invocations"]] = df_bedrock_metering.apply(
             calculate_cost, axis=1, result_type="expand"
         )
 
         # aggregate cost for each model_id
-        df_bedrock_metering_aggregated = df_bedrock_metering.groupby(["team_id", "model_id"]).sum()[
+        df_bedrock_cost_tracking_aggregated = df_bedrock_cost_tracking.groupby(["team_id", "model_id"]).sum()[
             ["input_tokens", "output_tokens", "input_cost", "output_cost", "invocations"]
         ]
 
-        logger.info(df_bedrock_metering_aggregated.to_string())
+        logger.info(df_bedrock_cost_tracking_aggregated.to_string())
 
         csv_buffer = StringIO()
-        df_bedrock_metering_aggregated.to_csv(csv_buffer)
+        df_bedrock_cost_tracking_aggregated.to_csv(csv_buffer)
 
         yesterday = datetime.datetime.now(pytz.UTC) - datetime.timedelta(days=1)
         yesterday_str = yesterday.strftime("%Y-%m-%d")

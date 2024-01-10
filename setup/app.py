@@ -210,25 +210,25 @@ class BedrockAPIStack(Stack):
         )
 
         # ==================================================
-        # =============== LAMBDA METERING ==================
+        # ============= LAMBDA COST TRACKING ===============
         # ==================================================
 
-        s3_bucket_metering = aws_s3.Bucket(
+        s3_bucket_cost_tracking = aws_s3.Bucket(
             self,
-            f"{self.prefix_id}_s3_bucket_metering",
-            bucket_name=f"{self.prefix_id}-bucket-metering-bedrock",
+            f"{self.prefix_id}_s3_bucket_cost_tracking",
+            bucket_name=f"{self.prefix_id}-bucket-cost-tracking-bedrock",
             auto_delete_objects=True,
             removal_policy=RemovalPolicy.DESTROY
         )
 
-        bedrock_metering = lambda_function.build(
-            function_name=f"{self.prefix_id}_bedrock_metering",
-            code_dir=f"{self.lambdas_directory}/metering",
+        bedrock_cost_tracking = lambda_function.build(
+            function_name=f"{self.prefix_id}_bedrock_cost_tracking",
+            code_dir=f"{self.lambdas_directory}/cost_tracking",
             memory=512,
             timeout=900,
             environment={
                 "LOG_GROUP_API": f"/aws/lambda/{self.prefix_id}_bedrock_invoke_model",
-                "S3_BUCKET": s3_bucket_metering.bucket_name
+                "S3_BUCKET": s3_bucket_cost_tracking.bucket_name
             },
             vpc=vpc,
             subnets=[private_subnet1, private_subnet2],
@@ -242,7 +242,7 @@ class BedrockAPIStack(Stack):
         )
 
         scheduler.build(
-            lambda_function=bedrock_metering
+            lambda_function=bedrock_cost_tracking
         )
 
         # ==================================================
