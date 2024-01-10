@@ -11,20 +11,20 @@
           "eu-central-1": {"input_cost": 0.0012, "output_cost": 0.0023}
       },
       "ai21.j2-ultra-v1": {
-          "us-east-1": {"input_cost": 0.0188, "output_cost": 0.0125},
-          "us-west-2": {"input_cost": 0.0188, "output_cost": 0.0125},
-          "ap-northeast-1": {"input_cost": 0.0188, "output_cost": 0.0125},
-          "eu-central-1": {"input_cost": 0.0188, "output_cost": 0.0125}
+          "us-east-1": {"input_cost": 0.0188, "output_cost": 0.0188},
+          "us-west-2": {"input_cost": 0.0188, "output_cost": 0.0188},
+          "ap-northeast-1": {"input_cost": 0.0188, "output_cost": 0.0188},
+          "eu-central-1": {"input_cost": 0.0188, "output_cost": 0.0188}
       },
       "ai21.j2-mid-v1": {
-          "us-east-1": {"input_cost": 0.0125, "output_cost": 0.0188},
-          "us-west-2": {"input_cost": 0.0125, "output_cost": 0.0188},
-          "ap-northeast-1": {"input_cost": 0.0125, "output_cost": 0.0188},
-          "eu-central-1": {"input_cost": 0.0125, "output_cost": 0.0188}
+          "us-east-1": {"input_cost": 0.0125, "output_cost": 0.0125},
+          "us-west-2": {"input_cost": 0.0125, "output_cost": 0.0125},
+          "ap-northeast-1": {"input_cost": 0.0125, "output_cost": 0.0125},
+          "eu-central-1": {"input_cost": 0.0125, "output_cost": 0.0125}
       },
       "anthropic.claude-instant-v1": {
-          "us-east-1": {"input_cost": 0.00163, "output_cost": 0.00551},
-          "us-west-2": {"input_cost": 0.00163, "output_cost": 0.00551},
+          "us-east-1": {"input_cost": 0.00080, "output_cost": 0.00240},
+          "us-west-2": {"input_cost": 0.00080, "output_cost": 0.00240},
           "ap-southeast-1": {"input_cost": 0.00223, "output_cost": 0.00755},
           "ap-northeast-1": {"input_cost": 0.00223, "output_cost": 0.00755},
           "eu-central-1": {"input_cost": 0.00248, "output_cost": 0.00838}
