@@ -2,7 +2,7 @@ from aws_lambda_powertools import Logger
 import boto3
 from botocore.config import Config
 import json
-from langchain.llms.bedrock import LLMInputOutputAdapter
+from langchain_community.llms.bedrock import LLMInputOutputAdapter
 import logging
 import math
 import os
