@@ -34,18 +34,26 @@ message.steps as steps
 
 def process_event(event):
     try:
+        if "date" in event:
+            date = event["date"]
+        else:
+            date = datetime.datetime.now(pytz.UTC) - datetime.timedelta(days=1)
+            date = date.strftime("%Y-%m-%d")
+
         # querying the cloudwatch logs from the API
-        query_results_api = run_query(QUERY_API, log_group_name_api)
-        df_bedrock_cost_tracking = results_to_df(query_results_api)
+        query_results_api = run_query(QUERY_API, log_group_name_api, date)
+        df_bedrock_cost_tracking = results_to_df(query_results_api, date)
+
+        print(df_bedrock_cost_tracking.head())
 
         # Apply the calculate_cost function to the DataFrame
-        df_bedrock_cost_tracking[["input_tokens", "output_tokens", "input_cost", "output_cost", "invocations"]] = df_bedrock_metering.apply(
+        df_bedrock_cost_tracking[["date", "input_tokens", "output_tokens", "input_cost", "output_cost", "invocations"]] = df_bedrock_cost_tracking.apply(
             calculate_cost, axis=1, result_type="expand"
         )
 
         # aggregate cost for each model_id
         df_bedrock_cost_tracking_aggregated = df_bedrock_cost_tracking.groupby(["team_id", "model_id"]).sum()[
-            ["input_tokens", "output_tokens", "input_cost", "output_cost", "invocations"]
+            ["date", "input_tokens", "output_tokens", "input_cost", "output_cost", "invocations"]
         ]
 
         logger.info(df_bedrock_cost_tracking_aggregated.to_string())
@@ -53,9 +61,7 @@ def process_event(event):
         csv_buffer = StringIO()
         df_bedrock_cost_tracking_aggregated.to_csv(csv_buffer)
 
-        yesterday = datetime.datetime.now(pytz.UTC) - datetime.timedelta(days=1)
-        yesterday_str = yesterday.strftime("%Y-%m-%d")
-        file_name = f"{yesterday_str}.csv"
+        file_name = f"{date}.csv"
 
         s3_resource.Object(s3_bucket, file_name).put(Body=csv_buffer.getvalue())
     except Exception as e:

@@ -32,15 +32,20 @@ def get_model_pricing(model_id, MODEL_PRICES):
     else:
         return matched[0]
 
-def run_query(query, log_group_name):
+def run_query(query, log_group_name, date=None):
     cloudwatch = boto3.client("logs")
 
     max_retries = 5
 
-    yesterday = datetime.datetime.now(pytz.UTC) - datetime.timedelta(days=1)
+    if date is None:
+        date = datetime.datetime.now(pytz.UTC) - datetime.timedelta(days=1)
+    else:
+        date = datetime.datetime.strptime(date, "%Y-%m-%d")
 
-    start = yesterday.replace(hour=0, minute=0, second=0, microsecond=0)
-    end = yesterday.replace(hour=23, minute=59, second=59, microsecond=0)
+    print(f"Date: {date}")
+
+    start = date.replace(hour=0, minute=0, second=0, microsecond=0)
+    end = date.replace(hour=23, minute=59, second=59, microsecond=0)
 
     response = cloudwatch.start_query(
         logGroupName=log_group_name,
@@ -124,7 +129,7 @@ def model_price_text(model_list, row):
 
     return input_token_count, output_token_count, input_cost, output_cost
 
-def results_to_df(results):
+def results_to_df(results, date=None):
     column_names = set()
     rows = []
 
@@ -137,7 +142,16 @@ def results_to_df(results):
         column_names.update(row.keys())
         rows.append(row)
 
+    if date is None:
+        date = datetime.datetime.now() - datetime.timedelta(days=1)
+        date = date.strftime("%d-%m-%Y")
+    else:
+        date = datetime.datetime.strptime(date, "%Y-%m-%d")
+        date = date.strftime("%d-%m-%Y")
+
     df = pd.DataFrame(rows, columns=list(column_names))
+    df["date"] = date
+
     return df
 
 def calculate_cost(row):
@@ -155,7 +169,7 @@ def calculate_cost(row):
         else:
             input_token_count, output_token_count, input_cost, output_cost = 0.0, 0.0, 0.0, 0.0
 
-        return input_token_count, output_token_count, input_cost, output_cost, 1
+        return row["date"], input_token_count, output_token_count, input_cost, output_cost, 1
     except Exception as e:
         stacktrace = traceback.format_exc()
         logger.error(stacktrace)
