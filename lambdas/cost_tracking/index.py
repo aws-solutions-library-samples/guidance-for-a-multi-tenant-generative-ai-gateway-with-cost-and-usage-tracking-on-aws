@@ -42,19 +42,21 @@ def process_event(event):
 
         # querying the cloudwatch logs from the API
         query_results_api = run_query(QUERY_API, log_group_name_api, date)
-        df_bedrock_cost_tracking = results_to_df(query_results_api, date)
+        df_bedrock_cost_tracking = results_to_df(query_results_api)
 
         print(df_bedrock_cost_tracking.head())
 
         # Apply the calculate_cost function to the DataFrame
-        df_bedrock_cost_tracking[["date", "input_tokens", "output_tokens", "input_cost", "output_cost", "invocations"]] = df_bedrock_cost_tracking.apply(
+        df_bedrock_cost_tracking[["input_tokens", "output_tokens", "input_cost", "output_cost", "invocations"]] = df_bedrock_cost_tracking.apply(
             calculate_cost, axis=1, result_type="expand"
         )
 
         # aggregate cost for each model_id
         df_bedrock_cost_tracking_aggregated = df_bedrock_cost_tracking.groupby(["team_id", "model_id"]).sum()[
-            ["date", "input_tokens", "output_tokens", "input_cost", "output_cost", "invocations"]
+            ["input_tokens", "output_tokens", "input_cost", "output_cost", "invocations"]
         ]
+
+        df_bedrock_cost_tracking_aggregated["date"] = date
 
         logger.info(df_bedrock_cost_tracking_aggregated.to_string())
 

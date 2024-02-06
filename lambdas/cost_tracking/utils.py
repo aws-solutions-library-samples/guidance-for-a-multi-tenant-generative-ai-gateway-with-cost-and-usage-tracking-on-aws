@@ -129,7 +129,7 @@ def model_price_text(model_list, row):
 
     return input_token_count, output_token_count, input_cost, output_cost
 
-def results_to_df(results, date=None):
+def results_to_df(results):
     column_names = set()
     rows = []
 
@@ -142,15 +142,7 @@ def results_to_df(results, date=None):
         column_names.update(row.keys())
         rows.append(row)
 
-    if date is None:
-        date = datetime.datetime.now() - datetime.timedelta(days=1)
-        date = date.strftime("%d-%m-%Y")
-    else:
-        date = datetime.datetime.strptime(date, "%Y-%m-%d")
-        date = date.strftime("%d-%m-%Y")
-
     df = pd.DataFrame(rows, columns=list(column_names))
-    df["date"] = date
 
     return df
 
@@ -169,7 +161,7 @@ def calculate_cost(row):
         else:
             input_token_count, output_token_count, input_cost, output_cost = 0.0, 0.0, 0.0, 0.0
 
-        return row["date"], input_token_count, output_token_count, input_cost, output_cost, 1
+        return input_token_count, output_token_count, input_cost, output_cost, 1
     except Exception as e:
         stacktrace = traceback.format_exc()
         logger.error(stacktrace)
