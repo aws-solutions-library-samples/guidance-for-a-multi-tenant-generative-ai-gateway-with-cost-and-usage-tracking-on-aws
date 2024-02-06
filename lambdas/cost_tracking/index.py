@@ -44,28 +44,27 @@ def process_event(event):
         query_results_api = run_query(QUERY_API, log_group_name_api, date)
         df_bedrock_cost_tracking = results_to_df(query_results_api)
 
-        print(df_bedrock_cost_tracking.head())
+        if len(df_bedrock_cost_tracking) > 0:
+            # Apply the calculate_cost function to the DataFrame
+            df_bedrock_cost_tracking[["input_tokens", "output_tokens", "input_cost", "output_cost", "invocations"]] = df_bedrock_cost_tracking.apply(
+                calculate_cost, axis=1, result_type="expand"
+            )
 
-        # Apply the calculate_cost function to the DataFrame
-        df_bedrock_cost_tracking[["input_tokens", "output_tokens", "input_cost", "output_cost", "invocations"]] = df_bedrock_cost_tracking.apply(
-            calculate_cost, axis=1, result_type="expand"
-        )
+            # aggregate cost for each model_id
+            df_bedrock_cost_tracking_aggregated = df_bedrock_cost_tracking.groupby(["team_id", "model_id"]).sum()[
+                ["input_tokens", "output_tokens", "input_cost", "output_cost", "invocations"]
+            ]
 
-        # aggregate cost for each model_id
-        df_bedrock_cost_tracking_aggregated = df_bedrock_cost_tracking.groupby(["team_id", "model_id"]).sum()[
-            ["input_tokens", "output_tokens", "input_cost", "output_cost", "invocations"]
-        ]
+            df_bedrock_cost_tracking_aggregated["date"] = date
 
-        df_bedrock_cost_tracking_aggregated["date"] = date
+            logger.info(df_bedrock_cost_tracking_aggregated.to_string())
 
-        logger.info(df_bedrock_cost_tracking_aggregated.to_string())
+            csv_buffer = StringIO()
+            df_bedrock_cost_tracking_aggregated.to_csv(csv_buffer)
 
-        csv_buffer = StringIO()
-        df_bedrock_cost_tracking_aggregated.to_csv(csv_buffer)
+            file_name = f"{date}.csv"
 
-        file_name = f"{date}.csv"
-
-        s3_resource.Object(s3_bucket, file_name).put(Body=csv_buffer.getvalue())
+            s3_resource.Object(s3_bucket, file_name).put(Body=csv_buffer.getvalue())
     except Exception as e:
         stacktrace = traceback.format_exc()
         logger.error(stacktrace)

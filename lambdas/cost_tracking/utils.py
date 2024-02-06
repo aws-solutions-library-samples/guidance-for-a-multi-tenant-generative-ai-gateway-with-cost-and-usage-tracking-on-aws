@@ -42,8 +42,6 @@ def run_query(query, log_group_name, date=None):
     else:
         date = datetime.datetime.strptime(date, "%Y-%m-%d")
 
-    print(f"Date: {date}")
-
     start = date.replace(hour=0, minute=0, second=0, microsecond=0)
     end = date.replace(hour=23, minute=59, second=59, microsecond=0)
 
