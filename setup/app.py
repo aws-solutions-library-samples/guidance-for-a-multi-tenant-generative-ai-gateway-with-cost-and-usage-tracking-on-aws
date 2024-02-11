@@ -57,6 +57,9 @@ class BedrockAPIStack(Stack):
         self.api_burst_rate = config.get("API_BURST_RATE", 10000)
         self.api_gw_id = config.get("API_GATEWAY_ID", None)
         self.api_gw_resource_id = config.get("API_GATEWAY_RESOURCE_ID", None)
+        self.sagemaker_endpoints = config.get("SAGEMAKER_ENDPOINTS", "")
+        self.sagemaker_url = config.get("SAGEMAKER_URL", None)
+        self.sagemaker_region = config.get("SAGEMAKER_REGION", None)
 
         if self.prefix_id is None:
             raise Exception("STACK_PREFIX not defined")
@@ -169,7 +172,8 @@ class BedrockAPIStack(Stack):
             environment={
                 "BEDROCK_URL": self.bedrock_endpoint_url,
                 "BEDROCK_REGION": self.region,
-                "TABLE_NAME": table.table_name
+                "TABLE_NAME": table.table_name,
+                "SAGEMAKER_ENDPOINTS": self.sagemaker_endpoints
             },
             vpc=vpc,
             subnets=[private_subnet1, private_subnet2],
@@ -186,7 +190,8 @@ class BedrockAPIStack(Stack):
                 "BEDROCK_URL": self.bedrock_endpoint_url,
                 "BEDROCK_REGION": self.region,
                 "LAMBDA_STREAMING": bedrock_invoke_model_streaming.function_name,
-                "TABLE_NAME": table.table_name
+                "TABLE_NAME": table.table_name,
+                "SAGEMAKER_ENDPOINTS": self.sagemaker_endpoints
             },
             vpc=vpc,
             subnets=[private_subnet1, private_subnet2],
@@ -201,7 +206,7 @@ class BedrockAPIStack(Stack):
             timeout=900,
             environment={
                 "BEDROCK_URL": self.bedrock_endpoint_url,
-                "BEDROCK_REGION": self.region
+                "BEDROCK_REGION": self.region,
             },
             vpc=vpc,
             subnets=[private_subnet1, private_subnet2],

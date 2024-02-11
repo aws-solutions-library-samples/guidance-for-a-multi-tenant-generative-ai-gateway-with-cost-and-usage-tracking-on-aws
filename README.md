@@ -306,6 +306,26 @@ chmod +x deploy_stack.sh
 ./deploy_stack.sh
 ```
 
+#### Optional
+
+Add FMs through Amazon SageMaker:
+
+We can expose Foundation Models hosted in Amazon SageMaker by providing the endpoint names in a JSON format:
+
+[
+  {
+    "STACK_PREFIX": "", # unit 1 with dedicated SaaS resources
+    "BEDROCK_ENDPOINT": "https://bedrock-runtime.{}.amazonaws.com", # bedrock-runtime endpoint used for invoking Amazon Bedrock
+    "BEDROCK_REQUIREMENTS": "boto3>=1.28.57 awscli>=1.29.57 botocore>=1.31.57", # Requirements for Amazon Bedrock
+    "LANGCHAIN_REQUIREMENTS": "aws-lambda-powertools langchain==0.0.349 pydantic PyYaml", # python modules installed for langchain layer
+    "PANDAS_REQUIREMENTS": "pandas", # python modules installed for pandas layer
+    "VPC_CIDR": "10.10.0.0/16" # CIDR used for the private VPC Env,
+    "API_THROTTLING_RATE": 10000, #Throttling limit assigned to the usage plan
+    "API_BURST_RATE": 5000 # Burst limit assigned to the usage plan,
+    "SAGEMAKER_ENDPOINTS": "{'Mixtral 8x7B': 'Mixtral-SM-Endpoint'}" # List of SageMaker endpoints
+  }
+]
+
 ### API Key Deployment
 
 #### Step 1

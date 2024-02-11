@@ -126,11 +126,27 @@ class IAM(Construct):
             ],
         )
 
+        sagemaker_policy = iam.Policy(
+            scope=self,
+            id=f"{self.id}_policy_sagemaker",
+            policy_name="SageMakerPolicy",
+            statements=[
+                iam.PolicyStatement(
+                    effect=iam.Effect.ALLOW,
+                    actions=[
+                        "sagemaker:*"
+                    ],
+                    resources=["*"],
+                )
+            ],
+        )
+
         bedrock_policy.attach_to_role(lambda_role)
         dynamodb_policy.attach_to_role(lambda_role)
         ec2_policy.attach_to_role(lambda_role)
         lambda_policy.attach_to_role(lambda_role)
         s3_policy.attach_to_role(lambda_role)
+        sagemaker_policy.attach_to_role(lambda_role)
 
         for el in self.dependencies:
             lambda_role.node.add_dependency(el)
