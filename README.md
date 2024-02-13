@@ -17,7 +17,7 @@ gives flexibility to adapt to changing model versions, architectures and invocat
 
 ## Project Description
 
-Multiple tenants within an enterprise could simply reflect to multiple teams or projects accessing LLMs via REST APIs just like other SaaS services. IT teams can add additional governance and controls over this SaaS layer. In this cdk example, we focus specifically on showcasing multiple tenants with different cost centers accessing the service via API gateway. An internal service is responsible to perform usage and cost tracking per tenant and aggregate that cost for reporting. Additionally, the API layer is updated to allow equal usage across all tenants to match the on-demand limits of the Bedrock service. The cdk template provided here deploys all the required resources to the AWS account. 
+Multiple tenants within an enterprise could simply reflect to multiple teams or projects accessing LLMs via REST APIs just like other SaaS services. IT teams can add additional governance and controls over this SaaS layer. In this cdk example, we focus specifically on showcasing multiple tenants with different cost centers accessing the service via API gateway. An internal service is responsible to perform usage and cost tracking per tenant and aggregate that cost for reporting. The cdk template provided here deploys all the required resources to the AWS account. 
 
 ![Architecture](images/architecture_new.png)
 
@@ -30,8 +30,8 @@ The CDK Stack provides the following deployments:
 3. API Gateway Usage Plan
 4. API Gateway Key 
 5. Lambda functions to list foundation models on Bedrock
-6. Lambda functions to invoke models on Bedrock
-7. Lambda functions to invoke models on Bedrock with streaming response
+6. Lambda functions to invoke models on Bedrock and SageMaker
+7. Lambda functions to invoke models on Bedrock and SageMaker with streaming response
 8. DynamoDB table for saving streaming responses asynchronously 
 9. Lambda function to aggregate usage and cost tracking 
 10. EventBridge to trigger the cost aggregation on a regular frequency 
@@ -42,13 +42,17 @@ The CDK Stack provides the following deployments:
 1. API Gateway Usage Plan
 2. API Gateway Key 
 
-Sample notebook in the notebooks folder can be used to invoke Bedrock as either one of the teams/cost_center. API gateway then routes the request to the Bedrock lambda that invokes Bedrock and logs the usage metrics to cloudwatch. EventBridge triggers the cost tracking lambda on a regular frequnecy to aggregate metrics from the cloudwatch logs and generate aggregate usage and cost metrics for the chosen granularity level. The metrics are stored in S3 and can further be visualized with custom reports. 
+Sample notebook in the notebooks folder can be used to invoke Bedrock as either one of the teams/cost_center. API gateway 
+then routes the request to the lambda that invokes Bedrock models or SageMaker hosted models and logs the usage metrics to cloudwatch. 
+EventBridge triggers the cost tracking lambda on a regular frequnecy to aggregate metrics from the cloudwatch logs and 
+generate aggregate usage and cost metrics for the chosen granularity level. The metrics are stored in S3 and can further 
+be visualized with custom reports. 
 
 ## API Specifications
 
 The CDK Stack creates Rest API compliant with OpenAPI specification standards.
 
-The solution is currently support both Bedrock **REST** invocation and **Streaming** invocation with long polling. 
+The solution is currently support both **REST** invocation and **Streaming** invocation with long polling for Bedrock and SageMaker.
 
 ### Swagger
 
@@ -318,6 +322,7 @@ Add FMs through Amazon SageMaker:
 
 We can expose Foundation Models hosted in Amazon SageMaker by providing the endpoint names in a JSON format:
 
+```
 [
   {
     "STACK_PREFIX": "", # unit 1 with dedicated SaaS resources
@@ -331,6 +336,7 @@ We can expose Foundation Models hosted in Amazon SageMaker by providing the endp
     "SAGEMAKER_ENDPOINTS": "{'Mixtral 8x7B': 'Mixtral-SM-Endpoint'}" # List of SageMaker endpoints
   }
 ]
+```
 
 ### API Key Deployment
 
