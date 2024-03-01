@@ -50,6 +50,9 @@ class BedrockAPIStack(Stack):
         self.bedrock_endpoint_url = config.get("BEDROCK_ENDPOINT", None)
         if self.bedrock_endpoint_url is not None:
             self.bedrock_endpoint_url = self.bedrock_endpoint_url.format(self.region)
+        self.bedrock_runtime_endpoint_url = config.get("BEDROCK_RUNTIME_ENDPOINT", None)
+        if self.bedrock_runtime_endpoint_url is not None:
+            self.bedrock_runtime_endpoint_url = self.bedrock_runtime_endpoint_url.format(self.region)
         self.bedrock_requirements = config.get("BEDROCK_REQUIREMENTS", None)
         self.langchain_requirements = config.get("LANGCHAIN_REQUIREMENTS", None)
         self.pandas_requirements = config.get("PANDAS_REQUIREMENTS", None)
@@ -170,7 +173,7 @@ class BedrockAPIStack(Stack):
             memory=512,
             timeout=900,
             environment={
-                "BEDROCK_URL": self.bedrock_endpoint_url,
+                "BEDROCK_URL": self.bedrock_runtime_endpoint_url,
                 "BEDROCK_REGION": self.region,
                 "TABLE_NAME": table.table_name,
                 "SAGEMAKER_ENDPOINTS": self.sagemaker_endpoints
@@ -187,7 +190,7 @@ class BedrockAPIStack(Stack):
             memory=512,
             timeout=900,
             environment={
-                "BEDROCK_URL": self.bedrock_endpoint_url,
+                "BEDROCK_URL": self.bedrock_runtime_endpoint_url,
                 "BEDROCK_REGION": self.region,
                 "LAMBDA_STREAMING": bedrock_invoke_model_streaming.function_name,
                 "TABLE_NAME": table.table_name,

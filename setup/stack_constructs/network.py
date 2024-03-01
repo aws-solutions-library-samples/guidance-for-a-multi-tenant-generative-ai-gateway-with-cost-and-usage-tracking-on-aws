@@ -82,6 +82,18 @@ class Network(Construct):
         # Bedrock VPCE
         ec2.CfnVPCEndpoint(
             self,
+            f"{self.id}_vpce_bedrock",
+            service_name=f"com.amazonaws.{self.region}.bedrock",
+            vpc_id=vpc.vpc_id,
+            private_dns_enabled=True,
+            security_group_ids=[endpoint_security_group.security_group_id],
+            subnet_ids=[private_subnet1.subnet_id, private_subnet2.subnet_id],
+            vpc_endpoint_type="Interface"
+        )
+
+        # Bedrock Runtime VPCE
+        ec2.CfnVPCEndpoint(
+            self,
             f"{self.id}_vpce_bedrock_runtime",
            service_name=f"com.amazonaws.{self.region}.bedrock-runtime",
            vpc_id=vpc.vpc_id,
