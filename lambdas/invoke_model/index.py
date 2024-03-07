@@ -29,9 +29,10 @@ sagemaker_region = os.environ.get("SAGEMAKER_REGION", "us-east-1") # If FMs are 
 sagemaker_url = os.environ.get("SAGEMAKER_URL", None) # If FMs are exposed through SageMaker
 
 class BedrockInference:
-    def __init__(self, bedrock_client, model_id):
+    def __init__(self, bedrock_client, model_id, messages_api="false"):
         self.bedrock_client = bedrock_client
         self.model_id = model_id
+        self.messages_api = messages_api
 
     def invoke_embeddings(self, body, model_kwargs):
         try:
@@ -155,7 +156,14 @@ class BedrockInference:
         try:
             provider = self.model_id.split(".")[0]
 
-            request_body = LLMInputOutputAdapter.prepare_input(provider, body["inputs"], model_kwargs)
+            if self.messages_api in ["True", "true"]:
+                request_body = {
+                    "messages": body["inputs"]
+                }
+
+                request_body.update(model_kwargs)
+            else:
+                request_body = LLMInputOutputAdapter.prepare_input(provider, body["inputs"], model_kwargs)
 
             request_body = json.dumps(request_body)
 
@@ -166,7 +174,16 @@ class BedrockInference:
                 contentType="application/json"
             )
 
-            response = LLMInputOutputAdapter.prepare_output(provider, response)
+            if self.messages_api in ["True", "true"]:
+                tmp_response = json.loads(response['body'].read().decode('utf-8'))
+                response = ""
+
+                if "content" in tmp_response:
+                    for el in tmp_response["content"]:
+                        response += el["text"]
+            else:
+                response = LLMInputOutputAdapter.prepare_output(provider, response)
+                response = response["text"]
 
             return response
         except Exception as e:
@@ -322,8 +339,9 @@ def bedrock_handler(event):
     logger.info(event)
 
     custom_request_id = event["queryStringParameters"]['requestId'] if 'requestId' in event["queryStringParameters"] else None
+    messages_api = event["headers"]["messages_api"] if "messages_api" in event["headers"] else "false"
 
-    bedrock_inference = BedrockInference(bedrock_client, model_id)
+    bedrock_inference = BedrockInference(bedrock_client, model_id, messages_api)
 
     if custom_request_id is None:
         request_id = event['requestContext']['requestId']

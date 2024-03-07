@@ -25,16 +25,16 @@
       "anthropic.claude-instant-v1": {
           "us-east-1": {"input_cost": 0.00080, "output_cost": 0.00240},
           "us-west-2": {"input_cost": 0.00080, "output_cost": 0.00240},
-          "ap-southeast-1": {"input_cost": 0.00223, "output_cost": 0.00755},
-          "ap-northeast-1": {"input_cost": 0.00223, "output_cost": 0.00755},
-          "eu-central-1": {"input_cost": 0.00248, "output_cost": 0.00838}
+          "ap-southeast-1": {"input_cost": 0.00080, "output_cost": 0.00240},
+          "ap-northeast-1": {"input_cost": 0.00080, "output_cost": 0.00240},
+          "eu-central-1": {"input_cost": 0.00080, "output_cost": 0.00240}
       },
       "anthropic.claude-v1": {
-          "us-east-1": {"input_cost": 0.00800, "output_cost": 0.02400},
-          "us-west-2": {"input_cost": 0.00800, "output_cost": 0.02400},
-          "ap-southeast-1": {"input_cost": 0.00800, "output_cost": 0.02400},
-          "ap-northeast-1": {"input_cost": 0.00800, "output_cost": 0.02400},
-          "eu-central-1": {"input_cost": 0.00800, "output_cost": 0.02400}
+          "us-east-1": {"input_cost": 0.00080, "output_cost": 0.00240},
+          "us-west-2": {"input_cost": 0.00080, "output_cost": 0.00240},
+          "ap-southeast-1": {"input_cost": 0.00080, "output_cost": 0.00240},
+          "ap-northeast-1": {"input_cost": 0.00080, "output_cost": 0.00240},
+          "eu-central-1": {"input_cost": 0.00080, "output_cost": 0.00240}
       },
       "anthropic.claude-v2": {
           "us-east-1": {"input_cost": 0.00800, "output_cost": 0.02400},
@@ -47,6 +47,10 @@
           "us-west-2": {"input_cost": 0.00800, "output_cost": 0.02400},
           "ap-northeast-1": {"input_cost": 0.00800, "output_cost": 0.02400},
           "eu-central-1": {"input_cost": 0.00800, "output_cost": 0.02400}
+      },
+      "anthropic.claude-3-sonnet-20240229-v1:0": {
+          "us-east-1": {"input_cost": 0.00300, "output_cost": 0.01500},
+          "us-west-2": {"input_cost": 0.00300, "output_cost": 0.01500}
       },
       "cohere.command-text-v14": {
           "us-east-1": {"input_cost": 0.0015, "output_cost": 0.0020},
@@ -71,6 +75,12 @@
           "us-west-2": {"input_cost": 0.00195, "output_cost": 0.00256},
           "ap-northeast-1": {"input_cost": 0.00195, "output_cost": 0.00256},
           "eu-central-1": {"input_cost": 0.00195, "output_cost": 0.00256}
+      },
+      "mistral.mistral-7b-instruct-v0:2": {
+          "us-west-2": {"input_cost": 0.00015, "output_cost": 0.0002}
+      },
+      "mistral.mixtral-8x7b-instruct-v0:1": {
+          "us-west-2": {"input_cost": 0.00045, "output_cost": 0.0007}
       }
   },
   "embeddings": {

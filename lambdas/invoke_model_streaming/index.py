@@ -1,13 +1,17 @@
+from __future__ import annotations
 from aws_lambda_powertools import Logger
 import boto3
 from botocore.config import Config
 import io
 import json
 from langchain_community.llms.bedrock import LLMInputOutputAdapter
+from langchain_core.load import Serializable
+from langchain_core.utils._merge import merge_dicts
 import logging
 import os
 import time
 import traceback
+from typing import Any, Dict, List, Literal, Optional
 
 logger = logging.getLogger(__name__)
 if len(logging.getLogger().handlers) > 0:
@@ -27,16 +31,75 @@ sagemaker_endpoints = os.environ.get("SAGEMAKER_ENDPOINTS", "") # If FMs are exp
 sagemaker_region = os.environ.get("SAGEMAKER_REGION", "us-east-1") # If FMs are exposed through SageMaker
 sagemaker_url = os.environ.get("SAGEMAKER_URL", None) # If FMs are exposed through SageMaker
 
+# Constants
+GUARDRAILS_BODY_KEY = "amazon-bedrock-guardrailAssessment"
+
+class Generation(Serializable):
+    """A single text generation output."""
+
+    text: str
+    """Generated text output."""
+
+    generation_info: Optional[Dict[str, Any]] = None
+    """Raw response from the provider. May include things like the 
+        reason for finishing or token log probabilities.
+    """
+    type: Literal["Generation"] = "Generation"
+    """Type is used exclusively for serialization purposes."""
+    # TODO: add log probs as separate attribute
+
+    @classmethod
+    def is_lc_serializable(cls) -> bool:
+        """Return whether this class is serializable."""
+        return True
+
+    @classmethod
+    def get_lc_namespace(cls) -> List[str]:
+        """Get the namespace of the langchain object."""
+        return ["langchain", "schema", "output"]
+
+
+class GenerationChunkMessagesAPI(Generation):
+    """Generation chunk, which can be concatenated with other Generation chunks."""
+
+    @classmethod
+    def get_lc_namespace(cls) -> List[str]:
+        """Get the namespace of the langchain object."""
+        return ["langchain", "schema", "output"]
+
+    def __add__(self, other: GenerationChunkMessagesAPI) -> GenerationChunkMessagesAPI:
+        if isinstance(other, GenerationChunkMessagesAPI):
+            generation_info = merge_dicts(
+                self.generation_info or {},
+                other.generation_info or {},
+            )
+            return GenerationChunkMessagesAPI(
+                text=self.text + other.text,
+                generation_info=generation_info or None,
+            )
+        else:
+            raise TypeError(
+                f"unsupported operand type(s) for +: '{type(self)}' and '{type(other)}'"
+            )
+
 class BedrockInferenceStream:
-    def __init__(self, bedrock_client, model_id):
+    def __init__(self, bedrock_client, model_id, messages_api="false"):
         self.bedrock_client = bedrock_client
         self.model_id = model_id
+        self.messages_api = messages_api
 
     def invoke_text_streaming(self, body, model_kwargs):
         try:
             provider = self.model_id.split(".")[0]
 
-            request_body = LLMInputOutputAdapter.prepare_input(provider, body["inputs"], model_kwargs)
+            if self.messages_api in ["True", "true"]:
+                request_body = {
+                    "messages": body["inputs"]
+                }
+
+                request_body.update(model_kwargs)
+            else:
+                request_body = LLMInputOutputAdapter.prepare_input(provider, body["inputs"], model_kwargs)
 
             request_body = json.dumps(request_body)
 
@@ -66,10 +129,37 @@ class BedrockInferenceStream:
 
             raise e
 
-        for chunk in LLMInputOutputAdapter.prepare_output_stream(
-                provider, response
-        ):
-            yield chunk
+        if self.messages_api in ["True", "true"]:
+            for chunk in self.stream_claude_3(response):
+                yield chunk
+        else:
+            for chunk in LLMInputOutputAdapter.prepare_output_stream(
+                    provider, response
+            ):
+                yield chunk
+
+    def stream_claude_3(self, response):
+        stream = response.get("body")
+
+        if not stream:
+            return
+
+        for event in stream:
+            chunk = event.get("chunk")
+            if not chunk:
+                continue
+
+            chunk_obj = json.loads(chunk.get("bytes").decode())
+
+            if "type" in chunk_obj and chunk_obj["type"] == "content_block_delta" and "delta" in chunk_obj:
+                yield GenerationChunkMessagesAPI(
+                    text=chunk_obj["delta"]["text"],
+                    generation_info={
+                        GUARDRAILS_BODY_KEY: chunk_obj.get(GUARDRAILS_BODY_KEY)
+                        if GUARDRAILS_BODY_KEY in chunk_obj
+                        else None,
+                    },
+                )
 
 class SageMakerInferenceStream:
     def __init__(self, sagemaker_runtime, endpoint_name):
@@ -227,7 +317,11 @@ def bedrock_handler(event):
 
         model_kwargs = body["parameters"] if "parameters" in body else {}
 
-        bedrock_streaming = BedrockInferenceStream(bedrock_client, model_id)
+        messages_api = event["headers"]["messages_api"] if "messages_api" in event["headers"] else "false"
+
+        logger.info(f"Messages API: {messages_api}")
+
+        bedrock_streaming = BedrockInferenceStream(bedrock_client, model_id, messages_api)
 
         response = ""
         for chunk in bedrock_streaming.invoke_text_streaming(body, model_kwargs):
