@@ -8,6 +8,7 @@ from langchain_community.llms.bedrock import LLMInputOutputAdapter
 from langchain_core.load import Serializable
 from langchain_core.utils._merge import merge_dicts
 import logging
+import math
 import os
 import time
 import traceback
@@ -87,6 +88,14 @@ class BedrockInferenceStream:
         self.bedrock_client = bedrock_client
         self.model_id = model_id
         self.messages_api = messages_api
+        self.input_tokens = 0
+        self.output_tokens = 0
+
+    def get_input_tokens(self):
+        return self.input_tokens
+
+    def get_output_tokens(self):
+        return self.output_tokens
 
     def invoke_text_streaming(self, body, model_kwargs):
         try:
@@ -112,6 +121,38 @@ class BedrockInferenceStream:
 
             raise e
 
+    def prepare_output_stream_messages_api(self, response):
+        stream = response.get("body")
+
+        if not stream:
+            return
+
+        for event in stream:
+            chunk = event.get("chunk")
+            if not chunk:
+                continue
+
+            chunk_obj = json.loads(chunk.get("bytes").decode())
+
+            if "type" in chunk_obj:
+                if chunk_obj["type"] == "content_block_delta" and "delta" in chunk_obj:
+                    yield GenerationChunkMessagesAPI(
+                        text=chunk_obj["delta"]["text"],
+                        generation_info={
+                            GUARDRAILS_BODY_KEY: chunk_obj.get(GUARDRAILS_BODY_KEY)
+                            if GUARDRAILS_BODY_KEY in chunk_obj
+                            else None,
+                        }
+                    )
+                if chunk_obj["type"] == "message_start" and "message" in chunk_obj and "usage" in chunk_obj["message"]:
+                    if "input_tokens" in chunk_obj["message"]["usage"]:
+                        self.input_tokens += int(chunk_obj["message"]["usage"]["input_tokens"])
+                    if "output_tokens" in chunk_obj["message"]["usage"]:
+                        self.output_tokens += int(chunk_obj["message"]["usage"]["output_tokens"])
+                if chunk_obj["type"] == "message_delta" and "usage" in chunk_obj:
+                    if "output_tokens" in chunk_obj["usage"]:
+                        self.output_tokens += int(chunk_obj["usage"]["output_tokens"])
+
     def stream(self, request_body):
         try:
             provider = self.model_id.split(".")[0]
@@ -130,36 +171,13 @@ class BedrockInferenceStream:
             raise e
 
         if self.messages_api in ["True", "true"]:
-            for chunk in self.stream_claude_3(response):
+            for chunk in self.prepare_output_stream_messages_api(response):
                 yield chunk
         else:
             for chunk in LLMInputOutputAdapter.prepare_output_stream(
                     provider, response
             ):
                 yield chunk
-
-    def stream_claude_3(self, response):
-        stream = response.get("body")
-
-        if not stream:
-            return
-
-        for event in stream:
-            chunk = event.get("chunk")
-            if not chunk:
-                continue
-
-            chunk_obj = json.loads(chunk.get("bytes").decode())
-
-            if "type" in chunk_obj and chunk_obj["type"] == "content_block_delta" and "delta" in chunk_obj:
-                yield GenerationChunkMessagesAPI(
-                    text=chunk_obj["delta"]["text"],
-                    generation_info={
-                        GUARDRAILS_BODY_KEY: chunk_obj.get(GUARDRAILS_BODY_KEY)
-                        if GUARDRAILS_BODY_KEY in chunk_obj
-                        else None,
-                    },
-                )
 
 class SageMakerInferenceStream:
     def __init__(self, sagemaker_runtime, endpoint_name):
@@ -300,6 +318,11 @@ def _get_sagemaker_client():
 
         raise e
 
+def _get_tokens(string):
+    logger.info("Counting approximation tokens")
+
+    return math.floor(len(string) / 4)
+
 def bedrock_handler(event):
     try:
         bedrock_client = _get_bedrock_client()
@@ -333,10 +356,13 @@ def bedrock_handler(event):
             "request_id": request_id,
             "status": 200,
             "generated_text": response,
-            "inputs": body["inputs"],
+            "inputTokens": bedrock_streaming.get_input_tokens() if bedrock_streaming.get_input_tokens() != 0 else _get_tokens(body["inputs"]),
+            "outputTokens": bedrock_streaming.get_output_tokens() if bedrock_streaming.get_output_tokens() != 0 else _get_tokens(response),
             "model_id": model_id,
             "ttl": int(time.time()) + 2 * 60
         }
+
+        logger.info(f"Streaming answer: {item}")
 
         connections = dynamodb.Table(table_name)
 

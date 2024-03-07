@@ -181,11 +181,28 @@ class BedrockInference:
                 if "content" in tmp_response:
                     for el in tmp_response["content"]:
                         response += el["text"]
+
+                if "usage" in tmp_response:
+                    if "input_tokens" in tmp_response["usage"]:
+                        input_tokens = tmp_response["usage"]["input_tokens"]
+                    else:
+                        input_tokens = _get_tokens(body["inputs"])
+
+                    if "output_tokens" in tmp_response["usage"]:
+                        output_tokens = tmp_response["usage"]["output_tokens"]
+                    else:
+                        output_tokens = _get_tokens(response)
+                else:
+                    input_tokens = _get_tokens(body["inputs"])
+                    output_tokens = _get_tokens(response)
             else:
                 response = LLMInputOutputAdapter.prepare_output(provider, response)
                 response = response["text"]
 
-            return response
+                input_tokens = _get_tokens(body["inputs"])
+                output_tokens = _get_tokens(response)
+
+            return input_tokens, output_tokens, response
         except Exception as e:
             stacktrace = traceback.format_exc()
 
@@ -485,24 +502,24 @@ def bedrock_handler(event):
             response = response.get("Item")
 
             results = {"statusCode": response["status"],
-                       "body": json.dumps([{"generated_text": response["generated_text"]}])}
+                       "body": json.dumps([{"generated_text": response["generated_text"]}])
+                       }
 
             connections.delete_item(Key={"request_id": custom_request_id})
 
-            if response["status"] == 200:
-                logs = {
-                    "team_id": team_id,
-                    "requestId": custom_request_id,
-                    "region": bedrock_region,
-                    "model_id": response["model_id"],
-                    "inputTokens": _get_tokens(response["inputs"]),
-                    "outputTokens": _get_tokens(response["generated_text"]),
-                    "height": None,
-                    "width": None,
-                    "steps": None
-                }
+            logs = {
+                "team_id": team_id,
+                "requestId": custom_request_id,
+                "region": bedrock_region,
+                "model_id": response["model_id"],
+                "inputTokens": int(response["inputTokens"]),
+                "outputTokens": int(response["outputTokens"]),
+                "height": None,
+                "width": None,
+                "steps": None
+            }
 
-                cloudwatch_logger.info(logs)
+            cloudwatch_logger.info(logs)
         else:
             results = {"statusCode": 200, "body": json.dumps([{"request_id": custom_request_id}])}
 
@@ -589,24 +606,23 @@ def sagemaker_handler(event):
         if "Item" in response:
             response = response.get("Item")
 
-            results = {"statusCode": response["status"],"body": json.dumps([{"generated_text": response["generated_text"]}])}
+            results = {"statusCode": response["status"], "body": json.dumps([{"generated_text": response["generated_text"]}])}
 
             connections.delete_item(Key={"request_id": custom_request_id})
 
-            if response["status"] == 200:
-                logs = {
-                    "team_id": team_id,
-                    "requestId": custom_request_id,
-                    "region": bedrock_region,
-                    "model_id": response["model_id"],
-                    "inputTokens": _get_tokens(response["inputs"]),
-                    "outputTokens": _get_tokens(response["generated_text"]),
-                    "height": None,
-                    "width": None,
-                    "steps": None
-                }
+            logs = {
+                "team_id": team_id,
+                "requestId": custom_request_id,
+                "region": bedrock_region,
+                "model_id": response["model_id"],
+                "inputTokens": _get_tokens(response["inputs"]),
+                "outputTokens": _get_tokens(response["generated_text"]),
+                "height": None,
+                "width": None,
+                "steps": None
+            }
 
-                cloudwatch_logger.info(logs)
+            cloudwatch_logger.info(logs)
         else:
             results = {"statusCode": 200, "body": json.dumps([{"request_id": custom_request_id}])}
 
