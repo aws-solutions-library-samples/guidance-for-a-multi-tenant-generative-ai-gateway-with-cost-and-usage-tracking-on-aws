@@ -113,7 +113,7 @@ class BedrockAPIStack(Stack):
         table = dynamodb_class.build()
 
         # ==================================================
-        # =============== LAMBDA LAYERS ====================
+        # ================= S3 BUCKETS =====================
         # ==================================================
 
         s3_bucket_layer = aws_s3.Bucket(
@@ -122,6 +122,17 @@ class BedrockAPIStack(Stack):
             auto_delete_objects=True,
             removal_policy=RemovalPolicy.DESTROY
         )
+
+        s3_bucket_configs = aws_s3.Bucket(
+            self,
+            f"{self.prefix_id}_s3_bucket_configs",
+            auto_delete_objects=True,
+            removal_policy=RemovalPolicy.DESTROY
+        )
+
+        # ==================================================
+        # =============== LAMBDA LAYERS ====================
+        # ==================================================
 
         lambda_layer = LambdaLayer(
             scope=self,
@@ -176,6 +187,7 @@ class BedrockAPIStack(Stack):
                 "BEDROCK_URL": self.bedrock_runtime_endpoint_url,
                 "BEDROCK_REGION": self.region,
                 "TABLE_NAME": table.table_name,
+                "S3_BUCKET": s3_bucket_configs.bucket_name,
                 "SAGEMAKER_ENDPOINTS": self.sagemaker_endpoints
             },
             vpc=vpc,
@@ -194,6 +206,7 @@ class BedrockAPIStack(Stack):
                 "BEDROCK_REGION": self.region,
                 "LAMBDA_STREAMING": bedrock_invoke_model_streaming.function_name,
                 "TABLE_NAME": table.table_name,
+                "S3_BUCKET": s3_bucket_configs.bucket_name,
                 "SAGEMAKER_ENDPOINTS": self.sagemaker_endpoints
             },
             vpc=vpc,

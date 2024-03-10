@@ -8,9 +8,6 @@ import math
 import os
 import traceback
 
-lambda_client = boto3.client('lambda')
-dynamodb = boto3.resource('dynamodb')
-
 logger = logging.getLogger(__name__)
 if len(logging.getLogger().handlers) > 0:
     logging.getLogger().setLevel(logging.INFO)
@@ -19,11 +16,16 @@ else:
 
 cloudwatch_logger = Logger()
 
+lambda_client = boto3.client('lambda')
+dynamodb = boto3.resource('dynamodb')
+s3_client = boto3.client('s3')
+
 bedrock_region = os.environ.get("BEDROCK_REGION", "us-east-1")
 bedrock_url = os.environ.get("BEDROCK_URL", None)
 iam_role = os.environ.get("IAM_ROLE", None)
 lambda_streaming = os.environ.get("LAMBDA_STREAMING", None)
 table_name = os.environ.get("TABLE_NAME", None)
+s3_bucket = os.environ.get("S3_BUCKET", None)
 sagemaker_endpoints = os.environ.get("SAGEMAKER_ENDPOINTS", "") # If FMs are exposed through SageMaker
 sagemaker_region = os.environ.get("SAGEMAKER_REGION", "us-east-1") # If FMs are exposed through SageMaker
 sagemaker_url = os.environ.get("SAGEMAKER_URL", None) # If FMs are exposed through SageMaker
@@ -464,9 +466,15 @@ def bedrock_handler(event):
 
                 event["queryStringParameters"]['request_id'] = request_id
 
+                s3_client.put_object(
+                    Bucket=s3_bucket,
+                    Key=f"{request_id}.json",
+                    Body=json.dumps(event).encode('utf-8')
+                )
+
                 lambda_client.invoke(FunctionName=lambda_streaming,
                                      InvocationType='Event',
-                                     Payload=json.dumps(event))
+                                     Payload=json.dumps({"request_json": f"{request_id}.json"}))
 
                 results = {"statusCode": 200, "body": json.dumps([{"request_id": request_id}])}
             else:

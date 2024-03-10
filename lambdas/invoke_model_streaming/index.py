@@ -23,11 +23,13 @@ else:
 cloudwatch_logger = Logger()
 
 dynamodb = boto3.resource('dynamodb')
+s3_client = boto3.client('s3')
 
 bedrock_region = os.environ.get("BEDROCK_REGION", "us-east-1")
 bedrock_url = os.environ.get("BEDROCK_URL", None)
 iam_role = os.environ.get("IAM_ROLE", None)
 table_name = os.environ.get("TABLE_NAME", None)
+s3_bucket = os.environ.get("S3_BUCKET", None)
 sagemaker_endpoints = os.environ.get("SAGEMAKER_ENDPOINTS", "") # If FMs are exposed through SageMaker
 sagemaker_region = os.environ.get("SAGEMAKER_REGION", "us-east-1") # If FMs are exposed through SageMaker
 sagemaker_url = os.environ.get("SAGEMAKER_URL", None) # If FMs are exposed through SageMaker
@@ -323,6 +325,27 @@ def _get_tokens(string):
 
     return math.floor(len(string) / 4)
 
+def _read_json_event(event):
+    try:
+        request_json = event["request_json"]
+
+        response = s3_client.get_object(Bucket=s3_bucket, Key=request_json)
+        content = response['Body'].read()
+
+        json_data = content.decode('utf-8')
+
+        event = json.loads(json_data)
+
+        s3_client.delete_object(Bucket=s3_bucket, Key=request_json)
+
+        return event
+    except Exception as e:
+        stacktrace = traceback.format_exc()
+
+        logger.error(stacktrace)
+
+        raise e
+
 def bedrock_handler(event):
     try:
         bedrock_client = _get_bedrock_client()
@@ -490,6 +513,8 @@ def sagemaker_handler(event):
         return {"statusCode": 500, "body": json.dumps([{"generated_text": stacktrace}])}
 
 def lambda_handler(event, context):
+    event = _read_json_event(event)
+
     model_id = event["queryStringParameters"]['model_id']
 
     if sagemaker_endpoints is not None and sagemaker_endpoints != "":
