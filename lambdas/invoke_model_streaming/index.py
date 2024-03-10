@@ -188,8 +188,63 @@ class SageMakerInferenceStream:
         # A buffered I/O stream to combine the payload parts:
         self.buff = io.BytesIO()
         self.read_pos = 0
+        self.input_tokens = 0
+        self.output_tokens = 0
 
-    def stream_inference(self, request_body):
+    def get_input_tokens(self):
+        return self.input_tokens
+
+    def get_output_tokens(self):
+        return self.output_tokens
+
+    def invoke_text_streaming(self, body, model_kwargs):
+        try:
+            request_body = {
+                "inputs": body["inputs"],
+                "parameters": model_kwargs
+            }
+
+            stream = self.stream(request_body)
+
+            response = self.prepare_output_stream_messages_api(stream)
+
+            self.input_tokens = _get_tokens(body["inputs"])
+
+            return response
+
+        except Exception as e:
+            stacktrace = traceback.format_exc()
+
+            logger.error(stacktrace)
+
+            raise e
+
+    def prepare_output_stream_messages_api(self, stream):
+        tmp_response = ""
+        for part in stream:
+            tmp_response += part
+
+        try:
+            response = json.loads(tmp_response)
+        except json.JSONDecodeError:
+            # Invalid JSON, try to fix it
+            if not tmp_response.endswith("}"):
+                # Missing closing bracket
+                tmp_response = tmp_response + "}"
+            if not tmp_response.endswith("]"):
+                # Uneven brackets
+                tmp_response = tmp_response + "]"
+
+            # Try again
+            response = json.loads(tmp_response)
+
+        response = response[0]["generated_text"]
+
+        self.output_tokens = _get_tokens(response)
+
+        return response
+
+    def stream(self, request_body):
         # Gets a streaming inference response
         # from the specified model endpoint:
         response = self.sagemaker_runtime \
@@ -401,14 +456,17 @@ def bedrock_handler(event):
 
         logger.error(stacktrace)
 
-        request_id = event['queryStringParameters']['request_id'] if "request_id" in event[
-            'queryStringParameters'] else None
+        body = json.loads(event["body"]) if "body" in event else {"inputs": ""}
+        model_id = event["queryStringParameters"]['model_id'] if "model_id" in event['queryStringParameters'] else None
+        request_id = event['queryStringParameters']['request_id'] if "request_id" in event['queryStringParameters'] else None
 
         if request_id is not None:
             item = {
                 "request_id": request_id,
                 "status": 500,
                 "generated_text": stacktrace,
+                "inputs": body["inputs"],
+                "model_id": model_id,
                 "ttl": int(time.time()) + 2 * 60
             }
 
@@ -442,31 +500,7 @@ def sagemaker_handler(event):
 
         sagemaker_streaming = SageMakerInferenceStream(sagemaker_client, endpoint_name)
 
-        request_body = {
-            "inputs": body["inputs"],
-            "parameters": model_kwargs
-        }
-
-        stream = sagemaker_streaming.stream_inference(request_body)
-        tmp_response = ""
-        for part in stream:
-            tmp_response += part
-
-        try:
-            response = json.loads(tmp_response)
-        except json.JSONDecodeError:
-            # Invalid JSON, try to fix it
-            if not tmp_response.endswith("}"):
-                # Missing closing bracket
-                tmp_response = tmp_response + "}"
-            if not tmp_response.endswith("]"):
-                # Uneven brackets
-                tmp_response = tmp_response + "]"
-
-            # Try again
-            response = json.loads(tmp_response)
-
-        response = response[0]["generated_text"]
+        response = sagemaker_streaming.invoke_text_streaming(body, model_kwargs)
 
         logger.info(f"Answer: {response}")
 
@@ -475,6 +509,8 @@ def sagemaker_handler(event):
             "status": 200,
             "generated_text": response,
             "inputs": body["inputs"],
+            "inputTokens": sagemaker_streaming.get_input_tokens(),
+            "outputTokens": sagemaker_streaming.get_output_tokens(),
             "model_id": model_id,
             "ttl": int(time.time()) + 2 * 60
         }
@@ -493,14 +529,17 @@ def sagemaker_handler(event):
 
         logger.error(stacktrace)
 
-        request_id = event['queryStringParameters']['request_id'] if "request_id" in event[
-            'queryStringParameters'] else None
+        body = json.loads(event["body"]) if "body" in event else {"inputs": ""}
+        model_id = event["queryStringParameters"]['model_id'] if "model_id" in event['queryStringParameters'] else None
+        request_id = event['queryStringParameters']['request_id'] if "request_id" in event['queryStringParameters'] else None
 
         if request_id is not None:
             item = {
                 "request_id": request_id,
                 "status": 500,
                 "generated_text": stacktrace,
+                "inputs": body["inputs"],
+                "model_id": model_id,
                 "ttl": int(time.time()) + 2 * 60
             }
 

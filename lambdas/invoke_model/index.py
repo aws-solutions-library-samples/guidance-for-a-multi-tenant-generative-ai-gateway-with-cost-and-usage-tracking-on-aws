@@ -519,9 +519,9 @@ def bedrock_handler(event):
                 "team_id": team_id,
                 "requestId": custom_request_id,
                 "region": bedrock_region,
-                "model_id": response["model_id"],
-                "inputTokens": int(response["inputTokens"]),
-                "outputTokens": int(response["outputTokens"]),
+                "model_id": response["model_id"] if "model_id" in response else None,
+                "inputTokens": int(response["inputTokens"]) if "inputTokens" in response else 0,
+                "outputTokens": int(response["outputTokens"]) if "outputTokens" in response else 0,
                 "height": None,
                 "width": None,
                 "steps": None
@@ -577,9 +577,15 @@ def sagemaker_handler(event):
 
                 event["queryStringParameters"]['request_id'] = request_id
 
+                s3_client.put_object(
+                    Bucket=s3_bucket,
+                    Key=f"{request_id}.json",
+                    Body=json.dumps(event).encode('utf-8')
+                )
+
                 lambda_client.invoke(FunctionName=lambda_streaming,
                                      InvocationType='Event',
-                                     Payload=json.dumps(event))
+                                     Payload=json.dumps({"request_json": f"{request_id}.json"}))
 
                 results = {"statusCode": 200, "body": json.dumps([{"request_id": request_id}])}
             else:
@@ -590,7 +596,7 @@ def sagemaker_handler(event):
                 logs = {
                     "team_id": team_id,
                     "requestId": request_id,
-                    "region": bedrock_region,
+                    "region": sagemaker_region,
                     "model_id": model_id,
                     "inputTokens": _get_tokens(body["inputs"]),
                     "outputTokens": _get_tokens(response),
@@ -621,10 +627,10 @@ def sagemaker_handler(event):
             logs = {
                 "team_id": team_id,
                 "requestId": custom_request_id,
-                "region": bedrock_region,
-                "model_id": response["model_id"],
-                "inputTokens": _get_tokens(response["inputs"]),
-                "outputTokens": _get_tokens(response["generated_text"]),
+                "region": sagemaker_region,
+                "model_id": response["model_id"] if "model_id" in response else None,
+                "inputTokens": int(response["inputTokens"]) if "inputTokens" in response else 0,
+                "outputTokens": int(response["outputTokens"]) if "outputTokens" in response else 0,
                 "height": None,
                 "width": None,
                 "steps": None
