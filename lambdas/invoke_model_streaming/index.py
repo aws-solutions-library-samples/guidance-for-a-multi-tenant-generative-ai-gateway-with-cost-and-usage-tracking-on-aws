@@ -456,7 +456,6 @@ def bedrock_handler(event):
 
         logger.error(stacktrace)
 
-        body = json.loads(event["body"]) if "body" in event else {"inputs": ""}
         model_id = event["queryStringParameters"]['model_id'] if "model_id" in event['queryStringParameters'] else None
         request_id = event['queryStringParameters']['request_id'] if "request_id" in event['queryStringParameters'] else None
 
@@ -465,7 +464,6 @@ def bedrock_handler(event):
                 "request_id": request_id,
                 "status": 500,
                 "generated_text": stacktrace,
-                "inputs": body["inputs"],
                 "model_id": model_id,
                 "ttl": int(time.time()) + 2 * 60
             }
@@ -529,7 +527,6 @@ def sagemaker_handler(event):
 
         logger.error(stacktrace)
 
-        body = json.loads(event["body"]) if "body" in event else {"inputs": ""}
         model_id = event["queryStringParameters"]['model_id'] if "model_id" in event['queryStringParameters'] else None
         request_id = event['queryStringParameters']['request_id'] if "request_id" in event['queryStringParameters'] else None
 
@@ -538,7 +535,6 @@ def sagemaker_handler(event):
                 "request_id": request_id,
                 "status": 500,
                 "generated_text": stacktrace,
-                "inputs": body["inputs"],
                 "model_id": model_id,
                 "ttl": int(time.time()) + 2 * 60
             }
