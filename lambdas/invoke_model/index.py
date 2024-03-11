@@ -35,6 +35,14 @@ class BedrockInference:
         self.bedrock_client = bedrock_client
         self.model_id = model_id
         self.messages_api = messages_api
+        self.input_tokens = 0
+        self.output_tokens = 0
+
+    def get_input_tokens(self):
+        return self.input_tokens
+
+    def get_output_tokens(self):
+        return self.output_tokens
 
     def invoke_embeddings(self, body, model_kwargs):
         try:
@@ -186,25 +194,25 @@ class BedrockInference:
 
                 if "usage" in tmp_response:
                     if "input_tokens" in tmp_response["usage"]:
-                        input_tokens = tmp_response["usage"]["input_tokens"]
+                        self.input_tokens = tmp_response["usage"]["input_tokens"]
                     else:
-                        input_tokens = _get_tokens(body["inputs"])
+                        self.input_tokens = _get_tokens(body["inputs"])
 
                     if "output_tokens" in tmp_response["usage"]:
-                        output_tokens = tmp_response["usage"]["output_tokens"]
+                        self.output_tokens = tmp_response["usage"]["output_tokens"]
                     else:
-                        output_tokens = _get_tokens(response)
+                        self.output_tokens = _get_tokens(response)
                 else:
-                    input_tokens = _get_tokens(body["inputs"])
-                    output_tokens = _get_tokens(response)
+                    self.input_tokens = _get_tokens(body["inputs"])
+                    self.output_tokens = _get_tokens(response)
             else:
                 response = LLMInputOutputAdapter.prepare_output(provider, response)
                 response = response["text"]
 
-                input_tokens = _get_tokens(body["inputs"])
-                output_tokens = _get_tokens(response)
+                self.input_tokens = _get_tokens(body["inputs"])
+                self.output_tokens = _get_tokens(response)
 
-            return input_tokens, output_tokens, response
+            return response
         except Exception as e:
             stacktrace = traceback.format_exc()
 
@@ -216,6 +224,14 @@ class SageMakerInference:
     def __init__(self, sagemaker_client, endpoint_name):
         self.sagemaker_client = sagemaker_client
         self.endpoint_name = endpoint_name
+        self.input_tokens = 0
+        self.output_tokens = 0
+
+    def get_input_tokens(self):
+        return self.input_tokens
+
+    def get_output_tokens(self):
+        return self.output_tokens
 
     ## TBD implementation
     def invoke_embeddings(self, body, model_kwargs):
@@ -235,6 +251,9 @@ class SageMakerInference:
             )
 
             response = json.loads(response['Body'].read().decode())
+
+            self.input_tokens = _get_tokens(body["inputs"])
+            self.output_tokens = _get_tokens(response[0]["generated_text"])
 
             return response[0]["generated_text"]
         except Exception as e:
@@ -487,8 +506,8 @@ def bedrock_handler(event):
                     "requestId": request_id,
                     "region": bedrock_region,
                     "model_id": model_id,
-                    "inputTokens": _get_tokens(body["inputs"]),
-                    "outputTokens": _get_tokens(response),
+                    "inputTokens": bedrock_inference.get_input_tokens(),
+                    "outputTokens": bedrock_inference.get_output_tokens(),
                     "height": None,
                     "width": None,
                     "steps": None
@@ -598,8 +617,8 @@ def sagemaker_handler(event):
                     "requestId": request_id,
                     "region": sagemaker_region,
                     "model_id": model_id,
-                    "inputTokens": _get_tokens(body["inputs"]),
-                    "outputTokens": _get_tokens(response),
+                    "inputTokens": sagemaker_inference.get_input_tokens(),
+                    "outputTokens": sagemaker_inference.get_output_tokens(),
                     "height": None,
                     "width": None,
                     "steps": None
