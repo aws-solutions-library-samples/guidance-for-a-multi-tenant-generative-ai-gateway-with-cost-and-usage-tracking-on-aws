@@ -1,5 +1,4 @@
 from __future__ import annotations
-from aws_lambda_powertools import Logger
 import boto3
 from botocore.config import Config
 import io
@@ -19,8 +18,6 @@ if len(logging.getLogger().handlers) > 0:
     logging.getLogger().setLevel(logging.INFO)
 else:
     logging.basicConfig(level=logging.INFO)
-
-cloudwatch_logger = Logger()
 
 dynamodb = boto3.resource('dynamodb')
 s3_client = boto3.client('s3')
@@ -104,13 +101,22 @@ class BedrockInferenceStream:
             provider = self.model_id.split(".")[0]
 
             if self.messages_api in ["True", "true"]:
-                request_body = {
-                    "messages": body["inputs"]
-                }
-
-                request_body.update(model_kwargs)
+                # request_body = {
+                #     "messages": body["inputs"]
+                # }
+                #
+                # request_body.update(model_kwargs)
+                request_body = LLMInputOutputAdapter.prepare_input(
+                    provider=provider,
+                    messages=body["inputs"],
+                    model_kwargs=model_kwargs
+                )
             else:
-                request_body = LLMInputOutputAdapter.prepare_input(provider, body["inputs"], model_kwargs)
+                request_body = LLMInputOutputAdapter.prepare_input(
+                    provider=provider,
+                    prompt=body["inputs"],
+                    model_kwargs=model_kwargs
+                )
 
             request_body = json.dumps(request_body)
 
