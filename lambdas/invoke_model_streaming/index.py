@@ -101,11 +101,6 @@ class BedrockInferenceStream:
             provider = self.model_id.split(".")[0]
 
             if self.messages_api in ["True", "true"]:
-                # request_body = {
-                #     "messages": body["inputs"]
-                # }
-                #
-                # request_body.update(model_kwargs)
                 request_body = LLMInputOutputAdapter.prepare_input(
                     provider=provider,
                     messages=body["inputs"],

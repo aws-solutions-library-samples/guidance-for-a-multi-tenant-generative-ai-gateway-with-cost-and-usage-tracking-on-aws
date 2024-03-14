@@ -52,6 +52,10 @@
           "us-east-1": {"input_cost": 0.00300, "output_cost": 0.01500},
           "us-west-2": {"input_cost": 0.00300, "output_cost": 0.01500}
       },
+      "anthropic.claude-3-haiku-20240307-v1:0": {
+          "us-east-1": {"input_cost": 0.00025, "output_cost": 0.00125},
+          "us-west-2": {"input_cost": 0.00025, "output_cost": 0.00125}
+      },
       "cohere.command-text-v14": {
           "us-east-1": {"input_cost": 0.0015, "output_cost": 0.0020},
           "us-west-2": {"input_cost": 0.0015, "output_cost": 0.0020},
@@ -77,9 +81,11 @@
           "eu-central-1": {"input_cost": 0.00195, "output_cost": 0.00256}
       },
       "mistral.mistral-7b-instruct-v0:2": {
+          "us-east-1": {"input_cost": 0.00015, "output_cost": 0.0002},
           "us-west-2": {"input_cost": 0.00015, "output_cost": 0.0002}
       },
       "mistral.mixtral-8x7b-instruct-v0:1": {
+          "us-east-1": {"input_cost": 0.00045, "output_cost": 0.0007},
           "us-west-2": {"input_cost": 0.00045, "output_cost": 0.0007}
       }
   },
