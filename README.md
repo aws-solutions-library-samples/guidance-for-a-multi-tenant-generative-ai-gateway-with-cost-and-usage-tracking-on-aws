@@ -273,6 +273,11 @@ The solution is currently support both **REST** invocation and **Streaming** inv
 
 ## Deploy Stack
 
+### Note
+
+The following examples are providing guidelines on the structure for the configuration file. 
+Please make sure to look at [setup/configs.json](./setup/configs.json) for the most updated version of the file.
+
 ### Full Deployment
 
 #### Step 1
@@ -284,8 +289,8 @@ Edit the global configs used in the CDK Stack. For each organizational units tha
   {
     "STACK_PREFIX": "", # unit 1 with dedicated SaaS resources
     "BEDROCK_ENDPOINT": "https://bedrock-runtime.{}.amazonaws.com", # bedrock-runtime endpoint used for invoking Amazon Bedrock
-    "BEDROCK_REQUIREMENTS": "boto3>=1.28.57 awscli>=1.29.57 botocore>=1.31.57", # Requirements for Amazon Bedrock
-    "LANGCHAIN_REQUIREMENTS": "aws-lambda-powertools langchain==0.0.349 pydantic PyYaml", # python modules installed for langchain layer
+    "BEDROCK_REQUIREMENTS": "boto3>=1.34.62 awscli>=1.32.62 botocore>=1.34.62", # Requirements for Amazon Bedrock
+    "LANGCHAIN_REQUIREMENTS": "aws-lambda-powertools langchain==0.1.12 pydantic PyYaml", # python modules installed for langchain layer
     "PANDAS_REQUIREMENTS": "pandas", # python modules installed for pandas layer
     "VPC_CIDR": "10.10.0.0/16" # CIDR used for the private VPC Env,
     "API_THROTTLING_RATE": 10000, #Throttling limit assigned to the usage plan
@@ -294,8 +299,8 @@ Edit the global configs used in the CDK Stack. For each organizational units tha
   {
     "STACK_PREFIX": "" # unit 2 with dedicated SaaS resources,
     "BEDROCK_ENDPOINT": "https://bedrock-runtime.{}.amazonaws.com", # bedrock-runtime endpoint used for invoking Amazon Bedrock
-    "BEDROCK_REQUIREMENTS": "boto3>=1.28.57 awscli>=1.29.57 botocore>=1.31.57", # Requirements for Amazon Bedrock
-    "LANGCHAIN_REQUIREMENTS": "aws-lambda-powertools langchain==0.0.349 pydantic PyYaml", # python modules installed for langchain layer
+    "BEDROCK_REQUIREMENTS": "boto3>=1.34.62 awscli>=1.32.62 botocore>=1.34.62", # Requirements for Amazon Bedrock
+    "LANGCHAIN_REQUIREMENTS": "aws-lambda-powertools langchain==0.1.12 pydantic PyYaml", # python modules installed for langchain layer
     "PANDAS_REQUIREMENTS": "pandas", # python modules installed for pandas layer
     "VPC_CIDR": "10.20.0.0/16" # CIDR used for the private VPC Env,
     "API_THROTTLING_RATE": 10000,
@@ -327,8 +332,8 @@ We can expose Foundation Models hosted in Amazon SageMaker by providing the endp
   {
     "STACK_PREFIX": "", # unit 1 with dedicated SaaS resources
     "BEDROCK_ENDPOINT": "https://bedrock-runtime.{}.amazonaws.com", # bedrock-runtime endpoint used for invoking Amazon Bedrock
-    "BEDROCK_REQUIREMENTS": "boto3>=1.28.57 awscli>=1.29.57 botocore>=1.31.57", # Requirements for Amazon Bedrock
-    "LANGCHAIN_REQUIREMENTS": "aws-lambda-powertools langchain==0.0.349 pydantic PyYaml", # python modules installed for langchain layer
+    "BEDROCK_REQUIREMENTS": "boto3>=1.34.62 awscli>=1.32.62 botocore>=1.34.62", # Requirements for Amazon Bedrock
+    "LANGCHAIN_REQUIREMENTS": "aws-lambda-powertools langchain==0.1.12 pydantic PyYaml", # python modules installed for langchain layer
     "PANDAS_REQUIREMENTS": "pandas", # python modules installed for pandas layer
     "VPC_CIDR": "10.10.0.0/16" # CIDR used for the private VPC Env,
     "API_THROTTLING_RATE": 10000, #Throttling limit assigned to the usage plan
@@ -374,4 +379,6 @@ chmod +x deploy_stack.sh
 ```
 
 ## Reading resources
-For additional reading, refer [Create a Generative AI Gateway to allow secure and compliant consumption of foundation models](https://aws.amazon.com/blogs/machine-learning/create-a-generative-ai-gateway-to-allow-secure-and-compliant-consumption-of-foundation-models/)
+For additional reading, refer to:
+1. [Build an internal SaaS service with cost and usage tracking for foundation models on Amazon Bedrock](https://aws.amazon.com/blogs/machine-learning/build-an-internal-saas-service-with-cost-and-usage-tracking-for-foundation-models-on-amazon-bedrock/)
+2. [Create a Generative AI Gateway to allow secure and compliant consumption of foundation models](https://aws.amazon.com/blogs/machine-learning/create-a-generative-ai-gateway-to-allow-secure-and-compliant-consumption-of-foundation-models/)

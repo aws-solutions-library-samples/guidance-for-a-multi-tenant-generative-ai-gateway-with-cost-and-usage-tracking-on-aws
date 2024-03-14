@@ -174,8 +174,8 @@ class BedrockInference:
                 request_body.update(model_kwargs)
             else:
                 request_body = LLMInputOutputAdapter.prepare_input(
-                    provider=provider, 
-                    prompt=body["inputs"], 
+                    provider=provider,
+                    prompt=body["inputs"],
                     model_kwargs=model_kwargs)
 
             request_body = json.dumps(request_body)
