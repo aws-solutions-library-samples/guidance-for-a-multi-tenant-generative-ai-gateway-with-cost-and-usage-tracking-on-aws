@@ -325,7 +325,7 @@ chmod +x deploy_stack.sh
 
 Add FMs through Amazon SageMaker:
 
-We can expose Foundation Models hosted in Amazon SageMaker by providing the endpoint names in a JSON format:
+We can expose Foundation Models hosted in Amazon SageMaker by providing the endpoint names in a JSON format as described in the example below:
 
 ```
 [
@@ -338,7 +338,7 @@ We can expose Foundation Models hosted in Amazon SageMaker by providing the endp
     "VPC_CIDR": "10.10.0.0/16" # CIDR used for the private VPC Env,
     "API_THROTTLING_RATE": 10000, #Throttling limit assigned to the usage plan
     "API_BURST_RATE": 5000 # Burst limit assigned to the usage plan,
-    "SAGEMAKER_ENDPOINTS": "{'Mixtral 8x7B': 'Mixtral-SM-Endpoint'}" # List of SageMaker endpoints
+    "SAGEMAKER_ENDPOINTS": "{\"Mixtral 8x7B\": \"Mixtral-SM-Endpoint\"}" # List of SageMaker endpoints
   }
 ]
 ```
