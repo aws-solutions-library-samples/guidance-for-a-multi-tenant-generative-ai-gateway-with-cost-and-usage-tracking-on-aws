@@ -108,11 +108,6 @@ paths:
         required: true
         schema:
           type: string
-      - name: team_id
-        in: header
-        required: true
-        schema:
-          type: string
       - name: messages_api
         in: header
         required: false
