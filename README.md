@@ -54,211 +54,106 @@ The CDK Stack creates Rest API compliant with OpenAPI specification standards.
 
 The solution is currently support both **REST** invocation and **Streaming** invocation with long polling for Bedrock and SageMaker.
 
-### Swagger
-
-```
-{
-  "swagger" : "2.0",
-  "info" : {
-    "version" : "2023-12-13T12:12:15Z",
-    "title" : "<REST_API_NAME>"
-  },
-  "host" : "<HOST>>.execute-api.<REGION>.amazonaws.com",
-  "basePath" : "/prod",
-  "schemes" : [ "https" ],
-  "paths" : {
-    "/invoke_model" : {
-      "post" : {
-        "produces" : [ "application/json" ],
-        "parameters" : [ {
-          "name" : "streaming",
-          "in" : "header",
-          "required" : false,
-          "type" : "string"
-        }, {
-          "name" : "team_id",
-          "in" : "header",
-          "required" : true,
-          "type" : "string"
-        }, {
-          "name" : "type",
-          "in" : "header",
-          "required" : false,
-          "type" : "string"
-        } ],
-        "responses" : {
-          "401" : {
-            "description" : "401 response",
-            "schema" : {
-              "$ref" : "#/definitions/Error"
-            },
-            "headers" : {
-              "Access-Control-Allow-Origin" : {
-                "type" : "string"
-              }
-            }
-          }
-        },
-        "security" : [ {
-          "api_key" : [ ]
-        } ]
-      }
-    },
-    "/list_foundation_models" : {
-      "get" : {
-        "produces" : [ "application/json" ],
-        "responses" : {
-          "401" : {
-            "description" : "401 response",
-            "schema" : {
-              "$ref" : "#/definitions/Error"
-            },
-            "headers" : {
-              "Access-Control-Allow-Origin" : {
-                "type" : "string"
-              }
-            }
-          }
-        },
-        "security" : [ {
-          "api_key" : [ ]
-        } ]
-      }
-    }
-  },
-  "securityDefinitions" : {
-    "api_key" : {
-      "type" : "apiKey",
-      "name" : "x-api-key",
-      "in" : "header"
-    }
-  },
-  "definitions" : {
-    "Error" : {
-      "type" : "object",
-      "properties" : {
-        "message" : {
-          "type" : "string"
-        }
-      },
-      "title" : "Error Schema"
-    }
-  }
-}
-```
-
 ### OpenAPI 3
 
 ```
-{
-  "openapi" : "3.0.1",
-  "info" : {
-    "title" : "<REST_API_NAME>",
-    "version" : "2023-12-13T12:12:15Z"
-  },
-  "servers" : [ {
-    "url" : "https://<HOST>.execute-api.<REGION>.amazonaws.com/{basePath}",
-    "variables" : {
-      "basePath" : {
-        "default" : "prod"
-      }
-    }
-  } ],
-  "paths" : {
-    "/list_foundation_models" : {
-      "get" : {
-        "responses" : {
-          "401" : {
-            "description" : "401 response",
-            "headers" : {
-              "Access-Control-Allow-Origin" : {
-                "schema" : {
-                  "type" : "string"
-                }
-              }
-            },
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/Error"
-                }
-              }
-            }
-          }
-        },
-        "security" : [ {
-          "api_key" : [ ]
-        } ]
-      }
-    },
-    "/invoke_model" : {
-      "post" : {
-        "parameters" : [ {
-          "name" : "streaming",
-          "in" : "header",
-          "schema" : {
-            "type" : "string"
-          }
-        }, {
-          "name" : "team_id",
-          "in" : "header",
-          "required" : true,
-          "schema" : {
-            "type" : "string"
-          }
-        }, {
-          "name" : "type",
-          "in" : "header",
-          "schema" : {
-            "type" : "string"
-          }
-        } ],
-        "responses" : {
-          "401" : {
-            "description" : "401 response",
-            "headers" : {
-              "Access-Control-Allow-Origin" : {
-                "schema" : {
-                  "type" : "string"
-                }
-              }
-            },
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/Error"
-                }
-              }
-            }
-          }
-        },
-        "security" : [ {
-          "api_key" : [ ]
-        } ]
-      }
-    }
-  },
-  "components" : {
-    "schemas" : {
-      "Error" : {
-        "title" : "Error Schema",
-        "type" : "object",
-        "properties" : {
-          "message" : {
-            "type" : "string"
-          }
-        }
-      }
-    },
-    "securitySchemes" : {
-      "api_key" : {
-        "type" : "apiKey",
-        "name" : "x-api-key",
-        "in" : "header"
-      }
-    }
-  }
-}
+openapi: 3.0.1
+info:
+  title: "<REST_API_NAME>"
+  version: '2023-12-13T12:12:15Z'
+servers:
+- url: https://<HOST>.execute-api.<REGION>.amazonaws.com/{basePath}
+  variables:
+    basePath:
+      default: prod
+paths:
+  "/list_foundation_models":
+    get:
+      responses:
+        '401':
+          description: 401 response
+          headers:
+            Access-Control-Allow-Origin:
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/Error"
+      security:
+      - api_key: []
+  "/invoke_model":
+    post:
+      parameters:
+      - name: model_id
+        in: query
+        required: true
+        schema:
+          type: string
+        description: Id of the base model to invoke
+      - name: model_arn
+        in: query
+        required: true
+        schema:
+          type: string
+        description: ARN of the custom model in Amazon Bedrock
+      - name: requestId
+        in: query
+        required: false
+        schema:
+          type: string
+        description: Request ID for long-polling functionality. Requires streaming=true
+      - name: team_id
+        in: header
+        required: true
+        schema:
+          type: string
+      - name: team_id
+        in: header
+        required: true
+        schema:
+          type: string
+      - name: messages_api
+        in: header
+        required: false
+        schema:
+          type: string
+      - name: streaming
+        in: header
+        required: false
+        schema:
+          type: string
+      - name: type
+        in: header
+        required: false
+        schema:
+          type: string
+      responses:
+        '401':
+          description: 401 response
+          headers:
+            Access-Control-Allow-Origin:
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/Error"
+      security:
+      - api_key: []
+components:
+  schemas:
+    Error:
+      title: Error Schema
+      type: object
+      properties:
+        message:
+          type: string
+  securitySchemes:
+    api_key:
+      type: apiKey
+      name: x-api-key
+      in: header
 ```
 
 ## Reporting Costs Example

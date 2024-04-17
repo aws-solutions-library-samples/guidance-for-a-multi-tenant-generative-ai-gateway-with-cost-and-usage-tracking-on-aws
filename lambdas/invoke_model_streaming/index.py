@@ -83,9 +83,10 @@ class GenerationChunkMessagesAPI(Generation):
             )
 
 class BedrockInferenceStream:
-    def __init__(self, bedrock_client, model_id, messages_api="false"):
+    def __init__(self, bedrock_client, model_id, model_arn=None, messages_api="false"):
         self.bedrock_client = bedrock_client
         self.model_id = model_id
+        self.model_arn = model_arn
         self.messages_api = messages_api
         self.input_tokens = 0
         self.output_tokens = 0
@@ -160,9 +161,11 @@ class BedrockInferenceStream:
         try:
             provider = self.model_id.split(".")[0]
 
+            modelId = self.model_arn if self.model_arn is not None else self.model_id
+
             response = self.bedrock_client.invoke_model_with_response_stream(
                 body=request_body,
-                modelId=self.model_id,
+                modelId=modelId,
                 accept="application/json",
                 contentType="application/json",
             )
@@ -402,33 +405,33 @@ def _read_json_event(event):
 
         raise e
 
-def bedrock_handler(event):
+def bedrock_handler(event: Dict) -> Dict:
     try:
         bedrock_client = _get_bedrock_client()
 
         logger.info(event)
         model_id = event["queryStringParameters"]['model_id']
+        model_arn = event["queryStringParameters"].get('model_arn', None)
         request_id = event['queryStringParameters']['request_id']
 
         logger.info(f"Model ID: {model_id}")
         logger.info(f"Request ID: {request_id}")
 
         body = json.loads(event["body"])
-
         logger.info(f"Input body: {body}")
 
-        model_kwargs = body["parameters"] if "parameters" in body else {}
-
-        messages_api = event["headers"]["messages_api"] if "messages_api" in event["headers"] else "false"
-
+        model_kwargs = body.get("parameters", {})
+        messages_api = event["headers"].get("messages_api", "false")
         logger.info(f"Messages API: {messages_api}")
 
-        bedrock_streaming = BedrockInferenceStream(bedrock_client, model_id, messages_api)
+        bedrock_streaming = BedrockInferenceStream(
+            bedrock_client=bedrock_client,
+            model_id=model_id,
+            model_arn=model_arn,
+            messages_api=messages_api
+        )
 
-        response = ""
-        for chunk in bedrock_streaming.invoke_text_streaming(body, model_kwargs):
-            response += chunk.text
-
+        response = "".join(chunk.text for chunk in bedrock_streaming.invoke_text_streaming(body, model_kwargs))
         logger.info(f"Answer: {response}")
 
         item = {
@@ -444,21 +447,18 @@ def bedrock_handler(event):
         logger.info(f"Streaming answer: {item}")
 
         connections = dynamodb.Table(table_name)
-
-        response = connections.put_item(Item=item)
+        connections.put_item(Item=item)
 
         logger.info(f"Put item: {response}")
 
-        results = {"statusCode": 200, "body": response}
+        return {"statusCode": 200, "body": response}
 
-        return results
     except Exception as e:
         stacktrace = traceback.format_exc()
-
         logger.error(stacktrace)
 
-        model_id = event["queryStringParameters"]['model_id'] if "model_id" in event['queryStringParameters'] else None
-        request_id = event['queryStringParameters']['request_id'] if "request_id" in event['queryStringParameters'] else None
+        model_id = event.get("queryStringParameters", {}).get('model_id', None)
+        request_id = event.get("queryStringParameters", {}).get('request_id', None)
 
         if request_id is not None:
             item = {
@@ -470,14 +470,13 @@ def bedrock_handler(event):
             }
 
             connections = dynamodb.Table(table_name)
-
-            response = connections.put_item(Item=item)
+            connections.put_item(Item=item)
 
             logger.info(f"Put exception item: {response}")
 
         return {"statusCode": 500, "body": json.dumps([{"generated_text": stacktrace}])}
 
-def sagemaker_handler(event):
+def sagemaker_handler(event: Dict) -> Dict:
     try:
         sagemaker_client = _get_sagemaker_client()
 
@@ -489,10 +488,9 @@ def sagemaker_handler(event):
         logger.info(f"Request ID: {request_id}")
 
         body = json.loads(event["body"])
-
         logger.info(f"Input body: {body}")
 
-        model_kwargs = body["parameters"] if "parameters" in body else {}
+        model_kwargs = body.get("parameters", {})
 
         endpoints = json.loads(sagemaker_endpoints)
         endpoint_name = endpoints[model_id]
@@ -500,7 +498,6 @@ def sagemaker_handler(event):
         sagemaker_streaming = SageMakerInferenceStream(sagemaker_client, endpoint_name)
 
         response = sagemaker_streaming.invoke_text_streaming(body, model_kwargs)
-
         logger.info(f"Answer: {response}")
 
         item = {
@@ -515,21 +512,18 @@ def sagemaker_handler(event):
         }
 
         connections = dynamodb.Table(table_name)
-
-        response = connections.put_item(Item=item)
+        connections.put_item(Item=item)
 
         logger.info(f"Put item: {response}")
 
-        results = {"statusCode": 200, "body": response}
+        return {"statusCode": 200, "body": response}
 
-        return results
     except Exception as e:
         stacktrace = traceback.format_exc()
-
         logger.error(stacktrace)
 
-        model_id = event["queryStringParameters"]['model_id'] if "model_id" in event['queryStringParameters'] else None
-        request_id = event['queryStringParameters']['request_id'] if "request_id" in event['queryStringParameters'] else None
+        model_id = event.get("queryStringParameters", {}).get('model_id', None)
+        request_id = event.get("queryStringParameters", {}).get('request_id', None)
 
         if request_id is not None:
             item = {
@@ -541,24 +535,20 @@ def sagemaker_handler(event):
             }
 
             connections = dynamodb.Table(table_name)
-
-            response = connections.put_item(Item=item)
+            connections.put_item(Item=item)
 
             logger.info(f"Put exception item: {response}")
 
         return {"statusCode": 500, "body": json.dumps([{"generated_text": stacktrace}])}
 
-def lambda_handler(event, context):
+def lambda_handler(event: Dict, context) -> Dict:
     event = _read_json_event(event)
 
     model_id = event["queryStringParameters"]['model_id']
 
-    if sagemaker_endpoints is not None and sagemaker_endpoints != "":
-        endpoints = json.loads(sagemaker_endpoints)
-    else:
-        endpoints = dict()
+    endpoints = json.loads(sagemaker_endpoints) if sagemaker_endpoints else {}
 
-    if model_id in list(endpoints.keys()):
+    if model_id in endpoints:
         return sagemaker_handler(event)
     else:
         return bedrock_handler(event)

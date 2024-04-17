@@ -31,9 +31,10 @@ sagemaker_region = os.environ.get("SAGEMAKER_REGION", "us-east-1") # If FMs are 
 sagemaker_url = os.environ.get("SAGEMAKER_URL", None) # If FMs are exposed through SageMaker
 
 class BedrockInference:
-    def __init__(self, bedrock_client, model_id, messages_api="false"):
+    def __init__(self, bedrock_client, model_id, model_arn=None, messages_api="false"):
         self.bedrock_client = bedrock_client
         self.model_id = model_id
+        self.model_arn = model_arn
         self.messages_api = messages_api
         self.input_tokens = 0
         self.output_tokens = 0
@@ -60,9 +61,11 @@ class BedrockInference:
 
             request_body = json.dumps(request_body)
 
+            modelId = self.model_arn if self.model_arn is not None else self.model_id
+
             response = self.bedrock_client.invoke_model(
                 body=request_body,
-                modelId=self.model_id,
+                modelId=modelId,
                 accept="application/json",
                 contentType="application/json",
             )
@@ -90,9 +93,11 @@ class BedrockInference:
 
             request_body = json.dumps(request_body)
 
+            modelId = self.model_arn if self.model_arn is not None else self.model_id
+
             response = self.bedrock_client.invoke_model(
                 body=request_body,
-                modelId=self.model_id,
+                modelId=modelId,
                 accept="application/json",
                 contentType="application/json",
             )
@@ -140,9 +145,11 @@ class BedrockInference:
 
             request_body = json.dumps(request_body)
 
+            modelId = self.model_arn if self.model_arn is not None else self.model_id
+
             response = self.bedrock_client.invoke_model(
                 body=request_body,
-                modelId=self.model_id,
+                modelId=modelId,
                 accept="application/json",
                 contentType="application/json",
             )
@@ -180,9 +187,11 @@ class BedrockInference:
 
             request_body = json.dumps(request_body)
 
+            modelId = self.model_arn if self.model_arn is not None else self.model_id
+
             response = self.bedrock_client.invoke_model(
                 body=request_body,
-                modelId=self.model_id,
+                modelId=modelId,
                 accept="application/json",
                 contentType="application/json"
             )
@@ -372,61 +381,37 @@ def _get_tokens(string):
 def bedrock_handler(event):
     logger.info("Bedrock Endpoint")
 
-    model_id = event["queryStringParameters"]['model_id']
+    model_id = event["queryStringParameters"]["model_id"]
+    model_arn = event["queryStringParameters"].get("model_arn")
     team_id = event["headers"]["team_id"]
-
     bedrock_client = _get_bedrock_client()
+    custom_request_id = event["queryStringParameters"].get("requestId")
+    messages_api = event["headers"].get("messages_api", "false")
 
-    logger.info(event)
-
-    custom_request_id = event["queryStringParameters"]['requestId'] if 'requestId' in event["queryStringParameters"] else None
-    messages_api = event["headers"]["messages_api"] if "messages_api" in event["headers"] else "false"
-
-    bedrock_inference = BedrockInference(bedrock_client, model_id, messages_api)
+    bedrock_inference = BedrockInference(
+        bedrock_client=bedrock_client,
+        model_id=model_id,
+        model_arn=model_arn,
+        messages_api=messages_api
+    )
 
     if custom_request_id is None:
-        request_id = event['requestContext']['requestId']
-        streaming = event["headers"]["streaming"] if "streaming" in event["headers"] else "false"
-
-        ## Check for embeddings or image
-        if "type" in event["headers"]:
-            if event["headers"]["type"].lower() == "embeddings":
-                embeddings = True
-                embeddings_image = False
-                image = False
-            elif event["headers"]["type"].lower() == "embeddings-image":
-                embeddings = False
-                embeddings_image = True
-                image = False
-            elif event["headers"]["type"].lower() == "image":
-                embeddings = False
-                embeddings_image = False
-                image = True
-            else:
-                embeddings = False
-                embeddings_image = False
-                image = False
-        else:
-            embeddings = False
-            embeddings_image = False
-            image = False
+        request_id = event["requestContext"]["requestId"]
+        streaming = event["headers"].get("streaming", "false")
+        embeddings = event["headers"].get("type", "").lower() == "embeddings"
+        embeddings_image = event["headers"].get("type", "").lower() == "embeddings-image"
+        image = event["headers"].get("type", "").lower() == "image"
 
         logger.info(f"Model ID: {model_id}")
         logger.info(f"Request ID: {request_id}")
 
         body = json.loads(event["body"])
-
-        logger.info(f"Input body: {body}")
-
-        model_kwargs = body["parameters"] if "parameters" in body else {}
+        model_kwargs = body.get("parameters", {})
 
         if embeddings:
             logger.info("Request type: embeddings")
-
             response = bedrock_inference.invoke_embeddings(body, model_kwargs)
-
             results = {"statusCode": 200, "body": json.dumps([{"embedding": response}])}
-
             logs = {
                 "team_id": team_id,
                 "requestId": request_id,
@@ -438,15 +423,12 @@ def bedrock_handler(event):
                 "width": None,
                 "steps": None
             }
-
             cloudwatch_logger.info(logs)
+
         elif embeddings_image:
             logger.info("Request type: embeddings-image")
-
             response = bedrock_inference.invoke_embeddings_image(body, model_kwargs)
-
             results = {"statusCode": 200, "body": json.dumps([{"embedding": response}])}
-
             logs = {
                 "team_id": team_id,
                 "requestId": request_id,
@@ -458,15 +440,12 @@ def bedrock_handler(event):
                 "width": None,
                 "steps": None
             }
-
             cloudwatch_logger.info(logs)
+
         elif image:
             logger.info("Request type: image")
-
             response, height, width, steps = bedrock_inference.invoke_image(body, model_kwargs)
-
             results = {"statusCode": 200, "body": json.dumps([response])}
-
             logs = {
                 "team_id": team_id,
                 "requestId": request_id,
@@ -478,32 +457,29 @@ def bedrock_handler(event):
                 "width": width,
                 "steps": steps
             }
-
             cloudwatch_logger.info(logs)
+
         else:
             logger.info("Request type: text")
 
             if streaming in ["True", "true"] and custom_request_id is None:
                 logger.info("Send streaming request")
-
-                event["queryStringParameters"]['request_id'] = request_id
-
+                event["queryStringParameters"]["request_id"] = request_id
                 s3_client.put_object(
                     Bucket=s3_bucket,
                     Key=f"{request_id}.json",
-                    Body=json.dumps(event).encode('utf-8')
+                    Body=json.dumps(event).encode("utf-8")
                 )
-
-                lambda_client.invoke(FunctionName=lambda_streaming,
-                                     InvocationType='Event',
-                                     Payload=json.dumps({"request_json": f"{request_id}.json"}))
-
+                lambda_client.invoke(
+                    FunctionName=lambda_streaming,
+                    InvocationType="Event",
+                    Payload=json.dumps({"request_json": f"{request_id}.json"})
+                )
                 results = {"statusCode": 200, "body": json.dumps([{"request_id": request_id}])}
+
             else:
                 response = bedrock_inference.invoke_text(body, model_kwargs)
-
                 results = {"statusCode": 200, "body": json.dumps([{"generated_text": response}])}
-
                 logs = {
                     "team_id": team_id,
                     "requestId": request_id,
@@ -515,40 +491,33 @@ def bedrock_handler(event):
                     "width": None,
                     "steps": None
                 }
-
                 cloudwatch_logger.info(logs)
 
         return results
+
     else:
         logger.info("Check streaming request")
-
         connections = dynamodb.Table(table_name)
-
         response = connections.get_item(Key={"request_id": custom_request_id})
 
-        logger.info(f"Response: {response}")
-
         if "Item" in response:
-            response = response.get("Item")
-
-            results = {"statusCode": response["status"],
-                       "body": json.dumps([{"generated_text": response["generated_text"]}])
-                       }
-
+            response = response["Item"]
+            results = {
+                "statusCode": response["status"],
+                "body": json.dumps([{"generated_text": response["generated_text"]}])
+            }
             connections.delete_item(Key={"request_id": custom_request_id})
-
             logs = {
                 "team_id": team_id,
                 "requestId": custom_request_id,
                 "region": bedrock_region,
-                "model_id": response["model_id"] if "model_id" in response else None,
-                "inputTokens": int(response["inputTokens"]) if "inputTokens" in response else 0,
-                "outputTokens": int(response["outputTokens"]) if "outputTokens" in response else 0,
+                "model_id": response.get("model_id"),
+                "inputTokens": int(response.get("inputTokens", 0)),
+                "outputTokens": int(response.get("outputTokens", 0)),
                 "height": None,
                 "width": None,
                 "steps": None
             }
-
             cloudwatch_logger.info(logs)
         else:
             results = {"statusCode": 200, "body": json.dumps([{"request_id": custom_request_id}])}
@@ -558,36 +527,24 @@ def bedrock_handler(event):
 def sagemaker_handler(event):
     logger.info("SageMaker Endpoint")
 
-    model_id = event["queryStringParameters"]['model_id']
+    model_id = event["queryStringParameters"]["model_id"]
     team_id = event["headers"]["team_id"]
-
     sagemaker_client = _get_sagemaker_client()
-
-    custom_request_id = event["queryStringParameters"]['requestId'] if 'requestId' in event["queryStringParameters"] else None
-
+    custom_request_id = event["queryStringParameters"].get("requestId")
     endpoints = json.loads(sagemaker_endpoints)
     endpoint_name = endpoints[model_id]
-
     sagemaker_inference = SageMakerInference(sagemaker_client, endpoint_name)
 
     if custom_request_id is None:
-        request_id = event['requestContext']['requestId']
-        streaming = event["headers"]["streaming"] if "streaming" in event["headers"] else "false"
+        request_id = event["requestContext"]["requestId"]
+        streaming = event["headers"].get("streaming", "false")
+        embeddings = event["headers"].get("type", "").lower() == "embeddings"
 
         logger.info(f"Model ID: {model_id}")
         logger.info(f"Request ID: {request_id}")
 
         body = json.loads(event["body"])
-        model_kwargs = body["parameters"] if "parameters" in body else {}
-
-        ## Check for embeddings or image
-        if "type" in event["headers"]:
-            if event["headers"]["type"].lower() == "embeddings":
-                embeddings = True
-            else:
-                embeddings = False
-        else:
-            embeddings = False
+        model_kwargs = body.get("parameters", {})
 
         if embeddings:
             results = {"statusCode": 500, "body": "SageMaker Embeddings not supported yet!"}
@@ -596,25 +553,21 @@ def sagemaker_handler(event):
 
             if streaming in ["True", "true"] and custom_request_id is None:
                 logger.info("Send streaming request")
-
-                event["queryStringParameters"]['request_id'] = request_id
-
+                event["queryStringParameters"]["request_id"] = request_id
                 s3_client.put_object(
                     Bucket=s3_bucket,
                     Key=f"{request_id}.json",
-                    Body=json.dumps(event).encode('utf-8')
+                    Body=json.dumps(event).encode("utf-8")
                 )
-
-                lambda_client.invoke(FunctionName=lambda_streaming,
-                                     InvocationType='Event',
-                                     Payload=json.dumps({"request_json": f"{request_id}.json"}))
-
+                lambda_client.invoke(
+                    FunctionName=lambda_streaming,
+                    InvocationType="Event",
+                    Payload=json.dumps({"request_json": f"{request_id}.json"})
+                )
                 results = {"statusCode": 200, "body": json.dumps([{"request_id": request_id}])}
             else:
                 response = sagemaker_inference.invoke_text(body, model_kwargs)
-
                 results = {"statusCode": 200, "body": json.dumps([{"generated_text": response}])}
-
                 logs = {
                     "team_id": team_id,
                     "requestId": request_id,
@@ -626,64 +579,55 @@ def sagemaker_handler(event):
                     "width": None,
                     "steps": None
                 }
-
                 cloudwatch_logger.info(logs)
 
         return results
+
     else:
         logger.info("Check streaming request")
-
         connections = dynamodb.Table(table_name)
-
         response = connections.get_item(Key={"request_id": custom_request_id})
 
-        logger.info(f"Response: {response}")
-
         if "Item" in response:
-            response = response.get("Item")
-
-            results = {"statusCode": response["status"], "body": json.dumps([{"generated_text": response["generated_text"]}])}
-
+            response = response["Item"]
+            results = {
+                "statusCode": response["status"],
+                "body": json.dumps([{"generated_text": response["generated_text"]}])
+            }
             connections.delete_item(Key={"request_id": custom_request_id})
-
             logs = {
                 "team_id": team_id,
                 "requestId": custom_request_id,
                 "region": sagemaker_region,
-                "model_id": response["model_id"] if "model_id" in response else None,
-                "inputTokens": int(response["inputTokens"]) if "inputTokens" in response else 0,
-                "outputTokens": int(response["outputTokens"]) if "outputTokens" in response else 0,
+                "model_id": response.get("model_id"),
+                "inputTokens": int(response.get("inputTokens", 0)),
+                "outputTokens": int(response.get("outputTokens", 0)),
                 "height": None,
                 "width": None,
                 "steps": None
             }
-
             cloudwatch_logger.info(logs)
         else:
             results = {"statusCode": 200, "body": json.dumps([{"request_id": custom_request_id}])}
 
         return results
+
 def lambda_handler(event, context):
     try:
-        if "team_id" in event["headers"] and event["headers"]["team_id"] is not None and event["headers"]["team_id"] != "":
-            model_id = event["queryStringParameters"]['model_id']
-
-            if sagemaker_endpoints is not None and sagemaker_endpoints != "":
-                endpoints = json.loads(sagemaker_endpoints)
-            else:
-                endpoints = dict()
-
-            if model_id in list(endpoints.keys()):
-                return sagemaker_handler(event)
-            else:
-                return bedrock_handler(event)
-        else:
+        team_id = event["headers"].get("team_id")
+        if not team_id:
             logger.error("Bad Request: Header 'team_id' is missing")
-
             return {"statusCode": 400, "body": "Bad Request"}
+
+        model_id = event["queryStringParameters"]["model_id"]
+        endpoints = json.loads(sagemaker_endpoints) if sagemaker_endpoints else {}
+
+        if model_id in endpoints:
+            return sagemaker_handler(event)
+        else:
+            return bedrock_handler(event)
 
     except Exception as e:
         stacktrace = traceback.format_exc()
-
         logger.error(stacktrace)
         return {"statusCode": 500, "body": json.dumps([{"generated_text": stacktrace}])}
