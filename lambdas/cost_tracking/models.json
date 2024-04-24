@@ -12,7 +12,7 @@
           "ap-northeast-1": {"input_cost": 0.0011, "output_cost": 0.0022},
           "ap-southeast-2": {"input_cost": 0.001, "output_cost": 0.0021},
           "eu-central-1": {"input_cost": 0.0012, "output_cost": 0.0023},
-          "eu-west-3": {"input_cost": 0.001, "output_cost": 0.0021},
+          "eu-west-3": {"input_cost": 0.001, "output_cost": 0.0021}
       },
       "ai21.j2-ultra-v1": {
           "us-east-1": {"input_cost": 0.0188, "output_cost": 0.0188},
