@@ -3,7 +3,7 @@
     "STACK_PREFIX": "",
     "BEDROCK_ENDPOINT": "https://bedrock.{}.amazonaws.com",
     "BEDROCK_RUNTIME_ENDPOINT": "https://bedrock-runtime.{}.amazonaws.com",
-    "BEDROCK_REQUIREMENTS": "boto3>=1.34.75 awscli>=1.32.75 botocore>=1.34.75",
+    "BEDROCK_REQUIREMENTS": "boto3>=1.34.90 awscli>=1.32.90 botocore>=1.34.90",
     "LANGCHAIN_REQUIREMENTS": "aws-lambda-powertools langchain==0.1.16 pydantic PyYaml",
     "PANDAS_REQUIREMENTS": "pandas",
     "SAGEMAKER_ENDPOINTS": "",
