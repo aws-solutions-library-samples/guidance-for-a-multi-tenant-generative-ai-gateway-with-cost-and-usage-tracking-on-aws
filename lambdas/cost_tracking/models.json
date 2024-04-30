@@ -63,6 +63,14 @@
           "us-east-1": {"input_cost": 0.0003, "output_cost": 0.0006},
           "us-west-2": {"input_cost": 0.0003, "output_cost": 0.0006}
       },
+      "cohere.command-r-plus-v1:0": {
+          "us-east-1": {"input_cost": 0.0030, "output_cost": 0.0150},
+          "us-west-2": {"input_cost": 0.0030, "output_cost": 0.0150}
+      },
+      "cohere.command-r-v1:0": {
+          "us-east-1": {"input_cost": 0.0005, "output_cost": 0.0015},
+          "us-west-2": {"input_cost": 0.0005, "output_cost": 0.0015}
+      },
       "meta.llama2-13b-chat-v1": {
           "us-east-1": {"input_cost": 0.00075, "output_cost": 0.00100},
           "us-west-2": {"input_cost": 0.00075, "output_cost": 0.00100}

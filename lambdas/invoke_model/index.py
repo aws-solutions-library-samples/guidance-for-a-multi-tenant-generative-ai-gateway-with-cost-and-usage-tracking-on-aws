@@ -39,6 +39,14 @@ class BedrockInference:
         self.input_tokens = 0
         self.output_tokens = 0
 
+    def _get_input_tokens(self, body, model_kwargs, is_messages_api):
+        if is_messages_api:
+            messages_text = model_kwargs.get("system", "") + "".join(
+                message["content"] + "\n" for message in body["inputs"])
+            return _get_tokens(messages_text)
+        else:
+            return _get_tokens(body["inputs"])
+
     def get_input_tokens(self):
         return self.input_tokens
 
@@ -172,62 +180,57 @@ class BedrockInference:
     def invoke_text(self, body, model_kwargs):
         try:
             provider = self.model_id.split(".")[0]
+            is_messages_api = self.messages_api.lower() in ["true"]
 
-            if self.messages_api in ["True", "true"]:
-                request_body = {
-                    "messages": body["inputs"]
-                }
-
-                request_body.update(model_kwargs)
+            if is_messages_api:
+                request_body = LLMInputOutputAdapter.prepare_input(
+                    provider=provider,
+                    messages=body["inputs"],
+                    model_kwargs=model_kwargs
+                )
             else:
                 request_body = LLMInputOutputAdapter.prepare_input(
                     provider=provider,
                     prompt=body["inputs"],
-                    model_kwargs=model_kwargs)
+                    model_kwargs=model_kwargs
+                )
 
             request_body = json.dumps(request_body)
-
-            modelId = self.model_arn if self.model_arn is not None else self.model_id
+            model_id = self.model_arn or self.model_id
 
             response = self.bedrock_client.invoke_model(
                 body=request_body,
-                modelId=modelId,
+                modelId=model_id,
                 accept="application/json",
                 contentType="application/json"
             )
 
-            if self.messages_api in ["True", "true"]:
-                tmp_response = json.loads(response['body'].read().decode('utf-8'))
-                response = ""
+            if provider == "anthropic":
+                response_body = json.loads(response.get("body").read().decode("utf-8"))
 
-                if "content" in tmp_response:
-                    for el in tmp_response["content"]:
-                        response += el["text"]
-
-                if "usage" in tmp_response:
-                    if "input_tokens" in tmp_response["usage"]:
-                        self.input_tokens = tmp_response["usage"]["input_tokens"]
-                    else:
-                        self.input_tokens = _get_tokens(body["inputs"])
-
-                    if "output_tokens" in tmp_response["usage"]:
-                        self.output_tokens = tmp_response["usage"]["output_tokens"]
-                    else:
-                        self.output_tokens = _get_tokens(response)
-                else:
-                    self.input_tokens = _get_tokens(body["inputs"])
-                    self.output_tokens = _get_tokens(response)
+                if "completion" in response_body:
+                    response = response_body.get("completion")
+                elif "content" in response_body:
+                    content = response_body.get("content")
+                    response = content[0].get("text")
             else:
                 response = LLMInputOutputAdapter.prepare_output(provider, response)
+                response_body = response["body"]
                 response = response["text"]
 
-                self.input_tokens = _get_tokens(body["inputs"])
+            if "usage" in response_body:
+                self.input_tokens = response_body["usage"].get("input_tokens") or self._get_input_tokens(body,
+                                                                                                         model_kwargs,
+                                                                                                         is_messages_api)
+
+                self.output_tokens = response_body["usage"].get("output_tokens") or _get_tokens(response)
+            else:
+                self.input_tokens = self._get_input_tokens(body, model_kwargs, is_messages_api)
                 self.output_tokens = _get_tokens(response)
 
             return response
         except Exception as e:
             stacktrace = traceback.format_exc()
-
             logger.error(stacktrace)
 
             raise e
@@ -462,7 +465,7 @@ def bedrock_handler(event):
         else:
             logger.info("Request type: text")
 
-            if streaming in ["True", "true"] and custom_request_id is None:
+            if streaming.lower() in ["true"] and custom_request_id is None:
                 logger.info("Send streaming request")
                 event["queryStringParameters"]["request_id"] = request_id
                 s3_client.put_object(
@@ -551,7 +554,7 @@ def sagemaker_handler(event):
         else:
             logger.info("Request type: text")
 
-            if streaming in ["True", "true"] and custom_request_id is None:
+            if streaming.lower() in ["true"] and custom_request_id is None:
                 logger.info("Send streaming request")
                 event["queryStringParameters"]["request_id"] = request_id
                 s3_client.put_object(
