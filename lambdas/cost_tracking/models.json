@@ -9,18 +9,25 @@
           "us-west-2": {"input_cost": 0.0188, "output_cost": 0.0188}
       },
       "amazon.titan-text-lite-v1": {
-          "us-east-1": {"input_cost": 0.0003, "output_cost": 0.0004},
-          "us-west-2": {"input_cost": 0.0003, "output_cost": 0.0004},
-          "ap-southeast-2": {"input_cost": 0.0004, "output_cost": 0.0005},
-          "eu-west-3": {"input_cost": 0.0004, "output_cost": 0.0005}
+          "us-east-1": {"input_cost": 0.00015, "output_cost": 0.0002},
+          "us-west-2": {"input_cost": 0.00015, "output_cost": 0.0002},
+          "ap-southeast-2": {"input_cost": 0.0002, "output_cost": 0.00025},
+          "eu-west-3": {"input_cost": 0.0004, "output_cost": 0.0005},
+          "ap-south-1": {"input_cost": 0.0004, "output_cost": 0.0005},
+          "eu-west-1": {"input_cost": 0.0003, "output_cost": 0.0004}
       },
       "amazon.titan-text-express-v1": {
-          "us-east-1": {"input_cost": 0.0008, "output_cost": 0.0016},
-          "us-west-2": {"input_cost": 0.0008, "output_cost": 0.0016},
-          "ap-southeast-2": {"input_cost": 0.001, "output_cost": 0.0021},
-          "ap-northeast-1": {"input_cost": 0.0011, "output_cost": 0.0022},
-          "eu-central-1": {"input_cost": 0.0012, "output_cost": 0.0023},
-          "eu-west-3": {"input_cost": 0.001, "output_cost": 0.0021}
+          "us-east-1": {"input_cost": 0.0002, "output_cost": 0.0006},
+          "us-west-2": {"input_cost": 0.0002, "output_cost": 0.0006},
+          "ap-southeast-2": {"input_cost": 0.00025, "output_cost": 0.000788},
+          "ap-northeast-1": {"input_cost": 0.000275, "output_cost": 0.0002},
+          "eu-central-1": {"input_cost": 0.0003, "output_cost": 0.000863},
+          "eu-west-3": {"input_cost": 0.001, "output_cost": 0.0021},
+          "ap-south-1": {"input_cost": 0.001, "output_cost": 0.0019},
+          "eu-west-1": {"input_cost": 0.001, "output_cost": 0.0017}
+      },
+      "amazon.titan-text-premier-v1:0": {
+          "us-east-1": {"input_cost": 0.0005, "output_cost": 0.0015}
       },
       "anthropic.claude-instant-v1": {
           "us-east-1": {"input_cost": 0.00080, "output_cost": 0.00240},
@@ -73,37 +80,51 @@
       },
       "meta.llama2-13b-chat-v1": {
           "us-east-1": {"input_cost": 0.00075, "output_cost": 0.00100},
-          "us-west-2": {"input_cost": 0.00075, "output_cost": 0.00100}
+          "us-west-2": {"input_cost": 0.00075, "output_cost": 0.00100},
+          "ap-south-1": {"input_cost": 0.00075, "output_cost": 0.001},
+          "eu-west-1": {"input_cost": 0.00075, "output_cost": 0.001}
       },
       "meta.llama2-70b-chat-v1": {
           "us-east-1": {"input_cost": 0.00195, "output_cost": 0.00256},
-          "us-west-2": {"input_cost": 0.00195, "output_cost": 0.00256}
+          "us-west-2": {"input_cost": 0.00195, "output_cost": 0.00256},
+          "ap-south-1": {"input_cost": 0.00195, "output_cost": 0.00256},
+          "eu-west-1": {"input_cost": 0.00195, "output_cost": 0.00256}
       },
       "meta.llama3-8b-instruct-v1:0": {
           "us-east-1": {"input_cost": 0.0004, "output_cost": 0.0006},
-          "us-west-2": {"input_cost": 0.0004, "output_cost": 0.0006}
+          "us-west-2": {"input_cost": 0.0004, "output_cost": 0.0006},
+          "ap-south-1": {"input_cost": 0.00048, "output_cost": 0.00072},
+          "eu-west-1": {"input_cost": 0.00043, "output_cost": 0.00065}
       },
       "meta.llama3-70b-instruct-v1:0": {
           "us-east-1": {"input_cost": 0.00265, "output_cost": 0.0035},
-          "us-west-2": {"input_cost": 0.00265, "output_cost": 0.0035}
+          "us-west-2": {"input_cost": 0.00265, "output_cost": 0.0035},
+          "ap-south-1": {"input_cost": 0.00318, "output_cost": 0.0042},
+          "eu-west-1": {"input_cost": 0.00286, "output_cost": 0.00378}
       },
       "mistral.mistral-7b-instruct-v0:2": {
           "us-east-1": {"input_cost": 0.00015, "output_cost": 0.0002},
           "us-west-2": {"input_cost": 0.00015, "output_cost": 0.0002},
           "ap-southeast-2": {"input_cost": 0.0002, "output_cost": 0.00026},
-          "eu-west-3": {"input_cost": 0.0002, "output_cost": 0.00026}
+          "eu-west-3": {"input_cost": 0.0002, "output_cost": 0.00026},
+          "ap-south-1": {"input_cost": 0.00018, "output_cost": 0.00024},
+          "eu-west-1": {"input_cost": 0.00016, "output_cost": 0.00022}
       },
       "mistral.mixtral-8x7b-instruct-v0:1": {
           "us-east-1": {"input_cost": 0.00045, "output_cost": 0.0007},
           "us-west-2": {"input_cost": 0.00045, "output_cost": 0.0007},
           "ap-southeast-2": {"input_cost": 0.00059, "output_cost": 0.00091},
-          "eu-west-3": {"input_cost": 0.00059, "output_cost": 0.00091}
+          "eu-west-3": {"input_cost": 0.00059, "output_cost": 0.00091},
+          "ap-south-1": {"input_cost": 0.00054, "output_cost": 0.00084},
+          "eu-west-1": {"input_cost": 0.00049, "output_cost": 0.00076}
       },
       "mistral.mistral-large-2402-v1:0": {
           "us-east-1": {"input_cost": 0.008, "output_cost": 0.024},
           "us-west-2": {"input_cost": 0.008, "output_cost": 0.024},
           "ap-southeast-2": {"input_cost": 0.0104, "output_cost": 0.0312},
-          "eu-west-3": {"input_cost": 0.0104, "output_cost": 0.0312}
+          "eu-west-3": {"input_cost": 0.0104, "output_cost": 0.0312},
+          "ap-south-1": {"input_cost": 0.0096, "output_cost": 0.0288},
+          "eu-west-1": {"input_cost": 0.0086, "output_cost": 0.0259}
       }
   },
   "embeddings": {
@@ -111,19 +132,31 @@
           "us-east-1": {"input_cost": 0.0001, "output_cost": 0},
           "us-west-2": {"input_cost": 0.0001, "output_cost": 0},
           "ap-northeast-1": {"input_cost": 0.0002, "output_cost": 0},
-          "eu-central-1": {"input_cost": 0.0002, "output_cost": 0}
+          "eu-central-1": {"input_cost": 0.0002, "output_cost": 0},
+          "ap-south-1": {"input_cost": 0.00012, "output_cost": 0},
+          "eu-west-1": {"input_cost": 0.0001, "output_cost": 0}
+      },
+      "amazon.titan-embed-text-v2:0": {
+          "us-east-1": {"input_cost": 0.00002, "output_cost": 0},
+          "us-west-2": {"input_cost": 0.00002, "output_cost": 0},
+          "ap-south-1": {"input_cost": 0.0001, "output_cost": 0},
+          "eu-west-1": {"input_cost": 0.0001, "output_cost": 0}
       },
       "amazon.titan-embed-image-v1": {
           "us-east-1": {"input_cost": 0.0008, "output_cost": 0},
           "us-west-2": {"input_cost": 0.0008, "output_cost": 0},
           "ap-southeast-2": {"input_cost": 0.001, "output_cost": 0},
-          "eu-west-3": {"input_cost": 0.001, "output_cost": 0}
+          "eu-west-3": {"input_cost": 0.001, "output_cost": 0},
+          "ap-south-1": {"input_cost": 0.001, "output_cost": 0},
+          "eu-west-1": {"input_cost": 0.001, "output_cost": 0}
       },
       "amazon.titan-embed-image-v1-image": {
           "us-east-1": {"input_cost": 0.00006, "output_cost": 0},
           "us-west-2": {"input_cost": 0.00006, "output_cost": 0},
           "ap-southeast-2": {"input_cost": 0.00008, "output_cost": 0},
-          "eu-west-3": {"input_cost": 0.00008, "output_cost": 0}
+          "eu-west-3": {"input_cost": 0.00008, "output_cost": 0},
+          "ap-south-1": {"input_cost": 0.00007, "output_cost": 0},
+          "eu-west-1": {"input_cost": 0.00007, "output_cost": 0}
       },
       "cohere.embed-english-v3": {
           "us-east-1": {"input_cost": 0.0001, "output_cost": 0},
@@ -132,7 +165,8 @@
           "ap-southeast-2": {"input_cost": 0.0001, "output_cost": 0},
           "ap-northeast-1": {"input_cost": 0.0001, "output_cost": 0},
           "eu-central-1": {"input_cost": 0.0001, "output_cost": 0},
-          "eu-west-3": {"input_cost": 0.0001, "output_cost": 0}
+          "eu-west-3": {"input_cost": 0.0001, "output_cost": 0},
+          "ap-south-1": {"input_cost": 0.0001, "output_cost": 0}
       },
       "cohere.embed-multilingual-v3": {
           "us-east-1": {"input_cost": 0.0001, "output_cost": 0},
@@ -141,7 +175,8 @@
           "ap-southeast-2": {"input_cost": 0.0001, "output_cost": 0},
           "ap-northeast-1": {"input_cost": 0.0001, "output_cost": 0},
           "eu-central-1": {"input_cost": 0.0001, "output_cost": 0},
-          "eu-west-3": {"input_cost": 0.0001, "output_cost": 0}
+          "eu-west-3": {"input_cost": 0.0001, "output_cost": 0},
+          "ap-south-1": {"input_cost": 0.0001, "output_cost": 0}
       }
   },
   "image": {
@@ -164,6 +199,26 @@
               "larger": {
                  "standard": 0.01,
                  "premium": 0.012
+              }
+          },
+          "ap-south-1": {
+              "512x512": {
+                  "standard": 0.01,
+                  "premium": 0.012
+              },
+              "larger": {
+                 "standard": 0.012,
+                 "premium": 0.014
+              }
+          },
+          "eu-west-1": {
+              "512x512": {
+                  "standard": 0.009,
+                  "premium": 0.0112
+              },
+              "larger": {
+                 "standard": 0.011,
+                 "premium": 0.013
               }
           }
       },
