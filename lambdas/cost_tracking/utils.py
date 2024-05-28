@@ -70,13 +70,11 @@ def run_query(query, log_group_name, date=None):
 def model_price_embeddings(model_list, row):
     input_token_count = float(row["input_tokens"]) if "input_tokens" in row else 0.0
     output_token_count = float(row["output_tokens"]) if "output_tokens" in row else 0.0
-    region = row["region"] if "region" in row else "us-east-1"
 
     model_id = row["model_id"]
 
     # get model pricing for each region
     model_pricing = get_model_pricing(model_id, model_list)
-    model_pricing = get_model_pricing(region, model_pricing)
 
     # calculate costs of prompt and completion
     input_cost = input_token_count * model_pricing["input_cost"] / 1000
@@ -88,13 +86,11 @@ def model_price_image(model_list, row):
     height = float(row["height"]) if "height" in row else 0.0
     width = float(row["width"]) if "width" in row else 0.0
     steps = float(row["steps"]) if "steps" in row else 0.0
-    region = row["region"] if "region" in row else "us-east-1"
 
     model_id = row["model_id"]
 
     # get model pricing from utils
     model_pricing = get_model_pricing(model_id, model_list)
-    model_pricing = get_model_pricing(region, model_pricing)
 
     if width <= 512 and height <= 512:
         size = "512x512"
@@ -113,13 +109,11 @@ def model_price_image(model_list, row):
 def model_price_text(model_list, row):
     input_token_count = float(row["input_tokens"]) if "input_tokens" in row else 0.0
     output_token_count = float(row["output_tokens"]) if "output_tokens" in row else 0.0
-    region = row["region"] if "region" in row else "us-east-1"
 
     model_id = row["model_id"]
 
     # get model pricing for each region
     model_pricing = get_model_pricing(model_id, model_list)
-    model_pricing = get_model_pricing(region, model_pricing)
 
     # calculate costs of prompt and completion
     input_cost = input_token_count * model_pricing["input_cost"] / 1000
@@ -148,7 +142,11 @@ def calculate_cost(row):
     try:
         model_id = row["model_id"]
 
-        model_list = _read_model_list("./models.json")
+        models = _read_model_list("./models.json")
+
+        region = row["region"] if "region" in row else "us-east-1"
+
+        model_list = models[region]
 
         if model_id in list(model_list["text"].keys()):
             input_token_count, output_token_count, input_cost, output_cost = model_price_text(model_list["text"], row)
