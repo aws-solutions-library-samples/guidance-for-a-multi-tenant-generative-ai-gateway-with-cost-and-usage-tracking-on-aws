@@ -1,4 +1,4 @@
-from __future__ import annotations
+import base64
 import boto3
 from botocore.config import Config
 import io
@@ -42,22 +42,46 @@ class BedrockInferenceStream:
         self.input_tokens = 0
         self.output_tokens = 0
 
+    def _decode_images(self, messages):
+        for item in messages:
+            if 'content' in item:
+                for content_item in item['content']:
+                    if 'image' in content_item and 'bytes' in content_item['image']['source']:
+                        encoded_image = content_item['image']['source']['bytes']
+                        base64_bytes = encoded_image.encode('utf-8')
+                        image_bytes = base64.b64decode(base64_bytes)
+                        content_item['image']['source']['bytes'] = image_bytes
+        return messages
+
     def get_input_tokens(self):
         return self.input_tokens
 
     def get_output_tokens(self):
         return self.output_tokens
 
-    def invoke_text_streaming(self, body, model_kwargs):
+    def invoke_text_streaming(self, body, model_kwargs:dict = dict(), additional_model_fields:dict = dict()):
         try:
             provider = self.model_id.split(".")[0]
 
             if self.messages_api.lower() in ["true"]:
-                request_body = LLMInputOutputAdapter.prepare_input(
-                    provider=provider,
-                    messages=body["inputs"],
-                    model_kwargs=model_kwargs
+                system = [{"text": model_kwargs["system"]}] if "system" in model_kwargs else list()
+
+                if "system" in model_kwargs:
+                    del model_kwargs["system"]
+
+                messages = self._decode_images(body["inputs"])
+
+                modelId = self.model_arn if self.model_arn is not None else self.model_id
+
+                response = self.bedrock_client.converse_stream(
+                    modelId=modelId,
+                    messages=messages,
+                    system=system,
+                    inferenceConfig=model_kwargs,
+                    additionalModelRequestFields=additional_model_fields
                 )
+
+                return self.prepare_output_stream(provider, response, messages_api=True)
             else:
                 request_body = LLMInputOutputAdapter.prepare_input(
                     provider=provider,
@@ -65,9 +89,9 @@ class BedrockInferenceStream:
                     model_kwargs=model_kwargs
                 )
 
-            request_body = json.dumps(request_body)
+                request_body = json.dumps(request_body)
 
-            return self.stream(request_body)
+                return self.stream(request_body)
 
         except Exception as e:
             stacktrace = traceback.format_exc()
@@ -77,7 +101,10 @@ class BedrockInferenceStream:
             raise e
 
     def prepare_output_stream(self, provider, response, stop=None, messages_api=False):
-        stream = response.get("body")
+        if messages_api:
+            stream = response.get("stream")
+        else:
+            stream = response.get("body")
 
         if not stream:
             return
@@ -93,72 +120,92 @@ class BedrockInferenceStream:
             )
 
         for event in stream:
-            chunk = event.get("chunk")
-            if not chunk:
-                continue
-
-            chunk_obj = json.loads(chunk.get("bytes").decode())
-
-            if provider == "cohere" and (
-                    chunk_obj["is_finished"] or chunk_obj[output_key] == "<EOS_TOKEN>"
-            ):
-                return
-
-            elif (
-                    provider == "mistral"
-                    and chunk_obj.get(output_key, [{}])[0].get("stop_reason", "") == "stop"
-            ):
-                return
-
-            elif messages_api and (chunk_obj.get("type") == "content_block_stop"):
-                return
-
-            if messages_api and chunk_obj.get("type") in (
-                    "message_start",
-                    "content_block_start",
-                    "content_block_delta",
-            ):
-                if chunk_obj.get("type") == "content_block_delta":
-                    if not chunk_obj["delta"]:
-                        chk = GenerationChunk(text="")
-                    else:
+            if messages_api:
+                if 'contentBlockDelta' in event:
+                    chunk_obj = event['contentBlockDelta']
+                    if "delta" in chunk_obj and "text" in chunk_obj["delta"]:
                         chk = GenerationChunk(
                             text=chunk_obj["delta"]["text"],
                             generation_info=dict(
                                 finish_reason=chunk_obj.get("stop_reason", None),
                             ),
                         )
-                    yield chk
-                else:
-                    continue
-            else:
-                if messages_api:
-                    if chunk_obj["type"] == "message_start" and "message" in chunk_obj and "usage" in chunk_obj["message"]:
-                        if "input_tokens" in chunk_obj["message"]["usage"]:
-                            self.input_tokens += int(chunk_obj["message"]["usage"]["input_tokens"])
-                        if "output_tokens" in chunk_obj["message"]["usage"]:
-                            self.output_tokens += int(chunk_obj["message"]["usage"]["output_tokens"])
-                    if chunk_obj["type"] == "message_delta" and "usage" in chunk_obj:
-                        if "input_tokens" in chunk_obj["usage"]:
-                            self.input_tokens += int(chunk_obj["usage"]["input_tokens"])
-                        if "output_tokens" in chunk_obj["usage"]:
-                            self.output_tokens += int(chunk_obj["usage"]["output_tokens"])
+                        yield chk
 
-                # chunk obj format varies with provider
-                yield GenerationChunk(
-                    text=(
-                        chunk_obj[output_key]
-                        if provider != "mistral"
-                        else chunk_obj[output_key][0]["text"]
-                    ),
-                    generation_info={
-                        GUARDRAILS_BODY_KEY: (
-                            chunk_obj.get(GUARDRAILS_BODY_KEY)
-                            if GUARDRAILS_BODY_KEY in chunk_obj
-                            else None
+                if "metadata" in event and "usage" in event["metadata"]:
+                    usage = event["metadata"]["usage"]
+                    if "inputTokens" in usage:
+                        self.input_tokens += usage["inputTokens"]
+                    if "outputTokens" in usage:
+                        self.output_tokens += usage["outputTokens"]
+
+            else:
+                chunk = event.get("chunk")
+                if not chunk:
+                    continue
+
+                chunk_obj = json.loads(chunk.get("bytes").decode())
+
+                if provider == "cohere" and (
+                        chunk_obj["is_finished"] or chunk_obj[output_key] == "<EOS_TOKEN>"
+                ):
+                    return
+
+                elif (
+                        provider == "mistral"
+                        and chunk_obj.get(output_key, [{}])[0].get("stop_reason", "") == "stop"
+                ):
+                    return
+
+                elif messages_api and (chunk_obj.get("type") == "content_block_stop"):
+                    return
+
+                if messages_api and chunk_obj.get("type") in (
+                        "message_start",
+                        "content_block_start",
+                        "content_block_delta",
+                ):
+                    if chunk_obj.get("type") == "content_block_delta":
+                        if not chunk_obj["delta"]:
+                            chk = GenerationChunk(text="")
+                        else:
+                            chk = GenerationChunk(
+                                text=chunk_obj["delta"]["text"],
+                                generation_info=dict(
+                                    finish_reason=chunk_obj.get("stop_reason", None),
+                                ),
+                            )
+                        yield chk
+                    else:
+                        continue
+                else:
+                    if messages_api:
+                        if chunk_obj["type"] == "message_start" and "message" in chunk_obj and "usage" in chunk_obj["message"]:
+                            if "input_tokens" in chunk_obj["message"]["usage"]:
+                                self.input_tokens += int(chunk_obj["message"]["usage"]["input_tokens"])
+                            if "output_tokens" in chunk_obj["message"]["usage"]:
+                                self.output_tokens += int(chunk_obj["message"]["usage"]["output_tokens"])
+                        if chunk_obj["type"] == "message_delta" and "usage" in chunk_obj:
+                            if "input_tokens" in chunk_obj["usage"]:
+                                self.input_tokens += int(chunk_obj["usage"]["input_tokens"])
+                            if "output_tokens" in chunk_obj["usage"]:
+                                self.output_tokens += int(chunk_obj["usage"]["output_tokens"])
+
+                    # chunk obj format varies with provider
+                    yield GenerationChunk(
+                        text=(
+                            chunk_obj[output_key]
+                            if provider != "mistral"
+                            else chunk_obj[output_key][0]["text"]
                         ),
-                    },
-                )
+                        generation_info={
+                            GUARDRAILS_BODY_KEY: (
+                                chunk_obj.get(GUARDRAILS_BODY_KEY)
+                                if GUARDRAILS_BODY_KEY in chunk_obj
+                                else None
+                            ),
+                        },
+                    )
 
     def stream(self, request_body):
         try:
@@ -410,20 +457,19 @@ def bedrock_handler(event: Dict) -> Dict:
     try:
         bedrock_client = _get_bedrock_client()
 
-        logger.info(event)
         model_id = event["queryStringParameters"]['model_id']
         model_arn = event["queryStringParameters"].get('model_arn', None)
         request_id = event['queryStringParameters']['request_id']
+        messages_api = event["headers"].get("messages_api", "false")
 
         logger.info(f"Model ID: {model_id}")
         logger.info(f"Request ID: {request_id}")
 
         body = json.loads(event["body"])
+        model_kwargs = body.get("parameters", {})
+        additional_model_fields = body.get("additional_model_fields", {})
         logger.info(f"Input body: {body}")
 
-        model_kwargs = body.get("parameters", {})
-        messages_api = event["headers"].get("messages_api", "false")
-        logger.info(f"Messages API: {messages_api}")
 
         bedrock_streaming = BedrockInferenceStream(
             bedrock_client=bedrock_client,
@@ -432,7 +478,7 @@ def bedrock_handler(event: Dict) -> Dict:
             messages_api=messages_api
         )
 
-        response = "".join(chunk.text for chunk in bedrock_streaming.invoke_text_streaming(body, model_kwargs))
+        response = "".join(chunk.text for chunk in bedrock_streaming.invoke_text_streaming(body, model_kwargs, additional_model_fields))
         logger.info(f"Answer: {response}")
 
         if messages_api.lower() in ["true"]:
@@ -502,7 +548,6 @@ def sagemaker_handler(event: Dict) -> Dict:
     try:
         sagemaker_client = _get_sagemaker_client()
 
-        logger.info(event)
         model_id = event["queryStringParameters"]['model_id']
         request_id = event['queryStringParameters']['request_id']
 
@@ -510,9 +555,9 @@ def sagemaker_handler(event: Dict) -> Dict:
         logger.info(f"Request ID: {request_id}")
 
         body = json.loads(event["body"])
-        logger.info(f"Input body: {body}")
-
         model_kwargs = body.get("parameters", {})
+
+        logger.info(f"Input body: {body}")
 
         endpoints = json.loads(sagemaker_endpoints)
         endpoint_name = endpoints[model_id]
@@ -565,6 +610,8 @@ def sagemaker_handler(event: Dict) -> Dict:
 
 def lambda_handler(event: Dict, context) -> Dict:
     event = _read_json_event(event)
+
+    logger.info(event)
 
     model_id = event["queryStringParameters"]['model_id']
 

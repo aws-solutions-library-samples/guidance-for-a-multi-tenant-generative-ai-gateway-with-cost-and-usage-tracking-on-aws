@@ -1,4 +1,5 @@
 from aws_lambda_powertools import Logger
+import base64
 import boto3
 from botocore.config import Config
 import json
@@ -31,7 +32,7 @@ sagemaker_region = os.environ.get("SAGEMAKER_REGION", "us-east-1") # If FMs are 
 sagemaker_url = os.environ.get("SAGEMAKER_URL", None) # If FMs are exposed through SageMaker
 
 class BedrockInference:
-    def __init__(self, bedrock_client, model_id, model_arn=None, messages_api="false"):
+    def __init__(self, bedrock_client, model_id, model_arn=None, messages_api="false", system=None):
         self.bedrock_client = bedrock_client
         self.model_id = model_id
         self.model_arn = model_arn
@@ -39,13 +40,16 @@ class BedrockInference:
         self.input_tokens = 0
         self.output_tokens = 0
 
-    def _get_input_tokens(self, body, model_kwargs, is_messages_api):
-        if is_messages_api:
-            messages_text = model_kwargs.get("system", "") + "".join(
-                message["content"] + "\n" for message in body["inputs"])
-            return _get_tokens(messages_text)
-        else:
-            return _get_tokens(body["inputs"])
+    def _decode_images(self, messages):
+        for item in messages:
+            if 'content' in item:
+                for content_item in item['content']:
+                    if 'image' in content_item and 'bytes' in content_item['image']['source']:
+                        encoded_image = content_item['image']['source']['bytes']
+                        base64_bytes = encoded_image.encode('utf-8')
+                        image_bytes = base64.b64decode(base64_bytes)
+                        content_item['image']['source']['bytes'] = image_bytes
+        return messages
 
     def get_input_tokens(self):
         return self.input_tokens
@@ -177,17 +181,38 @@ class BedrockInference:
 
             raise e
 
-    def invoke_text(self, body, model_kwargs):
+    def invoke_text(self, body, model_kwargs: dict = dict(), additional_model_fields: dict = dict()):
         try:
             provider = self.model_id.split(".")[0]
             is_messages_api = self.messages_api.lower() in ["true"]
 
             if is_messages_api:
-                request_body = LLMInputOutputAdapter.prepare_input(
-                    provider=provider,
-                    messages=body["inputs"],
-                    model_kwargs=model_kwargs
+                system = [{"text": model_kwargs["system"]}] if "system" in model_kwargs else list()
+
+                if "system" in model_kwargs:
+                    del model_kwargs["system"]
+
+                messages = self._decode_images(body["inputs"])
+
+                response = self.bedrock_client.converse(
+                    modelId=self.model_id,
+                    messages=messages,
+                    system=system,
+                    inferenceConfig=model_kwargs,
+                    additionalModelRequestFields=additional_model_fields
                 )
+
+                output_message = response['output']['message']
+
+                self.input_tokens = response['usage']['inputTokens']
+                self.output_tokens = response['usage']['outputTokens']
+
+                tmp_response = ""
+
+                for content in output_message['content']:
+                    tmp_response += content['text'] + " "
+
+                response = tmp_response.rstrip()
             else:
                 request_body = LLMInputOutputAdapter.prepare_input(
                     provider=provider,
@@ -195,37 +220,20 @@ class BedrockInference:
                     model_kwargs=model_kwargs
                 )
 
-            request_body = json.dumps(request_body)
-            model_id = self.model_arn or self.model_id
+                request_body = json.dumps(request_body)
+                model_id = self.model_arn or self.model_id
 
-            response = self.bedrock_client.invoke_model(
-                body=request_body,
-                modelId=model_id,
-                accept="application/json",
-                contentType="application/json"
-            )
+                response = self.bedrock_client.invoke_model(
+                    body=request_body,
+                    modelId=model_id,
+                    accept="application/json",
+                    contentType="application/json"
+                )
 
-            if provider == "anthropic":
-                response_body = json.loads(response.get("body").read().decode("utf-8"))
-
-                if "completion" in response_body:
-                    response = response_body.get("completion")
-                elif "content" in response_body:
-                    content = response_body.get("content")
-                    response = content[0].get("text")
-            else:
                 response = LLMInputOutputAdapter.prepare_output(provider, response)
-                response_body = response["body"]
                 response = response["text"]
 
-            if "usage" in response_body:
-                self.input_tokens = response_body["usage"].get("input_tokens") or self._get_input_tokens(body,
-                                                                                                         model_kwargs,
-                                                                                                         is_messages_api)
-
-                self.output_tokens = response_body["usage"].get("output_tokens") or _get_tokens(response)
-            else:
-                self.input_tokens = self._get_input_tokens(body, model_kwargs, is_messages_api)
+                self.input_tokens = _get_tokens(body["inputs"])
                 self.output_tokens = _get_tokens(response)
 
             return response
@@ -391,6 +399,9 @@ def bedrock_handler(event):
     custom_request_id = event["queryStringParameters"].get("requestId")
     messages_api = event["headers"].get("messages_api", "false")
 
+    if "system" in event["headers"]:
+        del event["headers"]["system"]
+
     bedrock_inference = BedrockInference(
         bedrock_client=bedrock_client,
         model_id=model_id,
@@ -410,6 +421,7 @@ def bedrock_handler(event):
 
         body = json.loads(event["body"])
         model_kwargs = body.get("parameters", {})
+        additional_model_fields = body.get("additional_model_fields", {})
 
         if embeddings:
             logger.info("Request type: embeddings")
@@ -481,7 +493,7 @@ def bedrock_handler(event):
                 results = {"statusCode": 200, "body": json.dumps([{"request_id": request_id}])}
 
             else:
-                response = bedrock_inference.invoke_text(body, model_kwargs)
+                response = bedrock_inference.invoke_text(body, model_kwargs, additional_model_fields)
                 results = {"statusCode": 200, "body": json.dumps([{"generated_text": response}])}
                 logs = {
                     "team_id": team_id,
@@ -617,6 +629,8 @@ def sagemaker_handler(event):
 
 def lambda_handler(event, context):
     try:
+        logger.info(event)
+
         team_id = event["headers"].get("team_id")
         if not team_id:
             logger.error("Bad Request: Header 'team_id' is missing")
