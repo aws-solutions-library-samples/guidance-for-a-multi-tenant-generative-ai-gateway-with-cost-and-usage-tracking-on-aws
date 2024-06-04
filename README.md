@@ -83,7 +83,12 @@ paths:
       security:
       - api_key: []
   "/invoke_model":
-    post:
+      requestBody:
+        required: true
+        content:
+          application/json:
+             schema:
+               $ref: '#/components/schemas/InvokeModelRequest'
       parameters:
       - name: model_id
         in: query
@@ -138,7 +143,43 @@ paths:
       - api_key: []
 components:
   schemas:
-    Error:
+   InvokeModelRequest:
+      type: object
+      required:
+        - inputs
+        - parameters
+      properties:
+        inputs:
+          $ref: '#/components/schemas/Prompt'
+        parameters:
+          $ref: '#/components/schemas/ModelParameters'
+   Prompt:
+      type: object
+      example:
+        - role: 'user'
+          content: 'What is Amazon Bedrock?'
+    ModelParameters:
+      type: object
+      properties:
+        maxTokens:
+          type: integer
+          required: false
+        temperature:
+          type: number
+          required: false
+        topP:
+          type: number
+          required: false
+        stopSequences:
+          type: array
+          required: false
+          items:
+            type: string
+        system:
+          type: string
+          required: false
+          
+   Error:
       title: Error Schema
       type: object
       properties:
