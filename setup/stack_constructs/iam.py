@@ -119,7 +119,9 @@ class IAM(Construct):
                 iam.PolicyStatement(
                     effect=iam.Effect.ALLOW,
                     actions=[
-                        "bedrock:*",
+                        "bedrock:InvokeModel",
+                        "bedrock:InvokeModelWithResponseStream",
+                        "bedrock:ListFoundationModels"
                     ],
                     resources=["*"],
                 )
@@ -134,7 +136,7 @@ class IAM(Construct):
                 iam.PolicyStatement(
                     effect=iam.Effect.ALLOW,
                     actions=[
-                        "sagemaker:*"
+                        "sagemaker:InvokeEndpoint"
                     ],
                     resources=["*"],
                 )

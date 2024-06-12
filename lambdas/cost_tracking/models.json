@@ -251,5 +251,13 @@
             "cohere.embed-multilingual-v3": {"input_cost": 0.0001, "output_cost": 0}
         },
         "image": {}
+    },
+    "eu-west-2": {
+        "text": {},
+        "embeddings": {
+            "amazon.titan-embed-image-v1": {"input_cost": 0.001, "output_cost": 0},
+            "amazon.titan-embed-image-v1-image": {"input_cost": 0.0001, "output_cost": 0}
+        },
+        "image": {}
     }
 }
