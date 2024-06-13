@@ -395,6 +395,8 @@ def bedrock_handler(event):
     model_id = event["queryStringParameters"]["model_id"]
     model_arn = event["queryStringParameters"].get("model_arn")
     team_id = event["headers"]["team_id"]
+    api_key = event["headers"]["x-api-key"]
+
     bedrock_client = _get_bedrock_client()
     custom_request_id = event["queryStringParameters"].get("requestId")
     messages_api = event["headers"].get("messages_api", "false")
@@ -513,7 +515,7 @@ def bedrock_handler(event):
     else:
         logger.info("Check streaming request")
         connections = dynamodb.Table(table_name)
-        response = connections.get_item(Key={"request_id": custom_request_id})
+        response = connections.get_item(Key={"composite_pk": f"{custom_request_id}_{api_key}"})
 
         if "Item" in response:
             response = response["Item"]
@@ -521,7 +523,7 @@ def bedrock_handler(event):
                 "statusCode": response["status"],
                 "body": json.dumps([{"generated_text": response["generated_text"]}])
             }
-            connections.delete_item(Key={"request_id": custom_request_id})
+            connections.delete_item(Key={"composite_pk": f"{custom_request_id}_{api_key}"})
             logs = {
                 "team_id": team_id,
                 "requestId": custom_request_id,
@@ -544,6 +546,8 @@ def sagemaker_handler(event):
 
     model_id = event["queryStringParameters"]["model_id"]
     team_id = event["headers"]["team_id"]
+    api_key = event["headers"]["x-api-key"]
+
     sagemaker_client = _get_sagemaker_client()
     custom_request_id = event["queryStringParameters"].get("requestId")
     endpoints = json.loads(sagemaker_endpoints)
@@ -601,7 +605,7 @@ def sagemaker_handler(event):
     else:
         logger.info("Check streaming request")
         connections = dynamodb.Table(table_name)
-        response = connections.get_item(Key={"request_id": custom_request_id})
+        response = connections.get_item(Key={"composite_pk": f"{custom_request_id}_{api_key}"})
 
         if "Item" in response:
             response = response["Item"]
@@ -609,7 +613,7 @@ def sagemaker_handler(event):
                 "statusCode": response["status"],
                 "body": json.dumps([{"generated_text": response["generated_text"]}])
             }
-            connections.delete_item(Key={"request_id": custom_request_id})
+            connections.delete_item(Key={"composite_pk": f"{custom_request_id}_{api_key}"})
             logs = {
                 "team_id": team_id,
                 "requestId": custom_request_id,

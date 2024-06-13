@@ -21,7 +21,7 @@ class DynamoDB(Construct):
             self,
             f"{self.id}_streaming_messages",
             partition_key=ddb.Attribute(
-                name="request_id",
+                name="composite_pk",
                 type=ddb.AttributeType.STRING
             ),
             time_to_live_attribute="ttl",

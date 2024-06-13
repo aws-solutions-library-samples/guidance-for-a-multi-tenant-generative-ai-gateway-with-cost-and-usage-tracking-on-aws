@@ -461,6 +461,7 @@ def bedrock_handler(event: Dict) -> Dict:
         model_arn = event["queryStringParameters"].get('model_arn', None)
         request_id = event['queryStringParameters']['request_id']
         messages_api = event["headers"].get("messages_api", "false")
+        api_key = event["headers"]["x-api-key"]
 
         logger.info(f"Model ID: {model_id}")
         logger.info(f"Request ID: {request_id}")
@@ -503,7 +504,9 @@ def bedrock_handler(event: Dict) -> Dict:
             outputTokens = _get_tokens(response)
 
         item = {
+            "composite_pk": f"{request_id}_{api_key}",
             "request_id": request_id,
+            "api_key": api_key,
             "status": 200,
             "generated_text": response,
             "inputTokens": inputTokens,
@@ -528,9 +531,13 @@ def bedrock_handler(event: Dict) -> Dict:
         model_id = event.get("queryStringParameters", {}).get('model_id', None)
         request_id = event.get("queryStringParameters", {}).get('request_id', None)
 
+        api_key = event["headers"]["x-api-key"]
+
         if request_id is not None:
             item = {
+                "composite_pk": f"{request_id}_{api_key}",
                 "request_id": request_id,
+                "api_key": api_key,
                 "status": 500,
                 "generated_text": stacktrace,
                 "model_id": model_id,
@@ -540,7 +547,7 @@ def bedrock_handler(event: Dict) -> Dict:
             connections = dynamodb.Table(table_name)
             connections.put_item(Item=item)
 
-            logger.info(f"Put exception item: {response}")
+            logger.info(f"Put exception item: {stacktrace}")
 
         return {"statusCode": 500, "body": json.dumps([{"generated_text": stacktrace}])}
 
@@ -550,6 +557,8 @@ def sagemaker_handler(event: Dict) -> Dict:
 
         model_id = event["queryStringParameters"]['model_id']
         request_id = event['queryStringParameters']['request_id']
+
+        api_key = event["headers"]["x-api-key"]
 
         logger.info(f"Model ID: {model_id}")
         logger.info(f"Request ID: {request_id}")
@@ -568,7 +577,9 @@ def sagemaker_handler(event: Dict) -> Dict:
         logger.info(f"Answer: {response}")
 
         item = {
+            "composite_pk": f"{request_id}_{api_key}",
             "request_id": request_id,
+            "api_key": api_key,
             "status": 200,
             "generated_text": response,
             "inputs": body["inputs"],
@@ -592,9 +603,13 @@ def sagemaker_handler(event: Dict) -> Dict:
         model_id = event.get("queryStringParameters", {}).get('model_id', None)
         request_id = event.get("queryStringParameters", {}).get('request_id', None)
 
+        api_key = event["headers"]["x-api-key"]
+
         if request_id is not None:
             item = {
+                "composite_pk": f"{request_id}_{api_key}",
                 "request_id": request_id,
+                "api_key": api_key,
                 "status": 500,
                 "generated_text": stacktrace,
                 "model_id": model_id,
@@ -604,7 +619,7 @@ def sagemaker_handler(event: Dict) -> Dict:
             connections = dynamodb.Table(table_name)
             connections.put_item(Item=item)
 
-            logger.info(f"Put exception item: {response}")
+            logger.info(f"Put exception item: {stacktrace}")
 
         return {"statusCode": 500, "body": json.dumps([{"generated_text": stacktrace}])}
 
