@@ -16,12 +16,16 @@ class DynamoDB(Construct):
         self.id = id
         self.dependencies = dependencies
 
-    def build(self):
+    def build(
+            self,
+            suffix: str,
+            key_name: str
+    ):
         table = ddb.Table(
             self,
-            f"{self.id}_streaming_messages",
+            f"{self.id}_{suffix}",
             partition_key=ddb.Attribute(
-                name="composite_pk",
+                name=key_name,
                 type=ddb.AttributeType.STRING
             ),
             time_to_live_attribute="ttl",

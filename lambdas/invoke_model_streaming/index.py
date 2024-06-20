@@ -25,7 +25,7 @@ s3_client = boto3.client('s3')
 bedrock_region = os.environ.get("BEDROCK_REGION", "us-east-1")
 bedrock_url = os.environ.get("BEDROCK_URL", None)
 iam_role = os.environ.get("IAM_ROLE", None)
-table_name = os.environ.get("TABLE_NAME", None)
+streaming_table_name = os.environ.get("STREAMING_TABLE_NAME", None)
 s3_bucket = os.environ.get("S3_BUCKET", None)
 sagemaker_endpoints = os.environ.get("SAGEMAKER_ENDPOINTS", "") # If FMs are exposed through SageMaker
 sagemaker_region = os.environ.get("SAGEMAKER_REGION", "us-east-1") # If FMs are exposed through SageMaker
@@ -33,23 +33,6 @@ sagemaker_url = os.environ.get("SAGEMAKER_URL", None) # If FMs are exposed throu
 
 # Constants
 GUARDRAILS_BODY_KEY = "amazon-bedrock-guardrailAssessment"
-
-def _read_sagemaker_endpoints():
-    if not sagemaker_endpoints:
-        return {}
-
-    try:
-        endpoints = json.loads(sagemaker_endpoints)
-    except json.JSONDecodeError:
-        try:
-            endpoints = ast.literal_eval(sagemaker_endpoints)
-        except (ValueError, SyntaxError) as e:
-            raise ValueError(f"Error: Invalid format for SAGEMAKER_ENDPOINTS: {e}")
-    else:
-        if not isinstance(endpoints, dict):
-            raise ValueError("Error: SAGEMAKER_ENDPOINTS is not a dictionary")
-
-    return endpoints
 
 class BedrockInferenceStream:
     def __init__(self, bedrock_client, model_id, model_arn=None, messages_api="false"):
@@ -471,6 +454,23 @@ def _read_json_event(event):
 
         raise e
 
+def _read_sagemaker_endpoints():
+    if not sagemaker_endpoints:
+        return {}
+
+    try:
+        endpoints = json.loads(sagemaker_endpoints)
+    except json.JSONDecodeError:
+        try:
+            endpoints = ast.literal_eval(sagemaker_endpoints)
+        except (ValueError, SyntaxError) as e:
+            raise ValueError(f"Error: Invalid format for SAGEMAKER_ENDPOINTS: {e}")
+    else:
+        if not isinstance(endpoints, dict):
+            raise ValueError("Error: SAGEMAKER_ENDPOINTS is not a dictionary")
+
+    return endpoints
+
 def bedrock_handler(event: Dict) -> Dict:
     try:
         bedrock_client = _get_bedrock_client()
@@ -535,7 +535,7 @@ def bedrock_handler(event: Dict) -> Dict:
 
         logger.info(f"Streaming answer: {item}")
 
-        connections = dynamodb.Table(table_name)
+        connections = dynamodb.Table(streaming_table_name)
         connections.put_item(Item=item)
 
         logger.info(f"Put item: {response}")
@@ -562,7 +562,7 @@ def bedrock_handler(event: Dict) -> Dict:
                 "ttl": int(time.time()) + 2 * 60
             }
 
-            connections = dynamodb.Table(table_name)
+            connections = dynamodb.Table(streaming_table_name)
             connections.put_item(Item=item)
 
             logger.info(f"Put exception item: {stacktrace}")
@@ -607,7 +607,7 @@ def sagemaker_handler(event: Dict) -> Dict:
             "ttl": int(time.time()) + 2 * 60
         }
 
-        connections = dynamodb.Table(table_name)
+        connections = dynamodb.Table(streaming_table_name)
         connections.put_item(Item=item)
 
         logger.info(f"Put item: {response}")
@@ -634,7 +634,7 @@ def sagemaker_handler(event: Dict) -> Dict:
                 "ttl": int(time.time()) + 2 * 60
             }
 
-            connections = dynamodb.Table(table_name)
+            connections = dynamodb.Table(streaming_table_name)
             connections.put_item(Item=item)
 
             logger.info(f"Put exception item: {stacktrace}")

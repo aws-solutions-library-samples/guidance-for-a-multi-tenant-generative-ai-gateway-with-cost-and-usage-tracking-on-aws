@@ -13,6 +13,7 @@
             "anthropic.claude-v2:1": {"input_cost": 0.00800, "output_cost": 0.02400},
             "anthropic.claude-3-sonnet-20240229-v1:0": {"input_cost": 0.00300, "output_cost": 0.01500},
             "anthropic.claude-3-haiku-20240307-v1:0": {"input_cost": 0.00025, "output_cost": 0.00125},
+            "anthropic.claude-3-5-sonnet-20240620-v1:0": {"input_cost": 0.003, "output_cost": 0.015},
             "cohere.command-text-v14": {"input_cost": 0.0015, "output_cost": 0.0020},
             "cohere.command-light-text-v14": {"input_cost": 0.0003, "output_cost": 0.0006},
             "cohere.command-r-plus-v1:0": {"input_cost": 0.0030, "output_cost": 0.0150},
@@ -256,6 +257,8 @@
         "text": {
             "amazon.titan-text-lite-v1": {"input_cost": 0.0002, "output_cost": 0.0003},
             "amazon.titan-text-express-v1": {"input_cost": 0.0003, "output_cost": 0.0009},
+            "anthropic.claude-3-sonnet-20240229-v1:0": {"input_cost": 0.003, "output_cost": 0.015},
+            "anthropic.claude-3-haiku-20240307-v1:0": {"input_cost": 0.00025, "output_cost": 0.00125},
             "meta.llama3-8b-instruct-v1:0": {"input_cost": 0.0003, "output_cost": 0.0006},
             "meta.llama3-70b-instruct-v1:0": {"input_cost": 0.00265, "output_cost": 0.0035},
             "mistral.mistral-7b-instruct-v0:2": {"input_cost": 0.00015, "output_cost": 0.0002},

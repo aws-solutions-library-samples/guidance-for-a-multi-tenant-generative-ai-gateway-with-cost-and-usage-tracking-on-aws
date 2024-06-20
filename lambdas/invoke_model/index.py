@@ -3,11 +3,13 @@ from aws_lambda_powertools import Logger
 import base64
 import boto3
 from botocore.config import Config
+import datetime
 import json
 from langchain_community.llms.bedrock import LLMInputOutputAdapter
 import logging
 import math
 import os
+import time
 import traceback
 
 logger = logging.getLogger(__name__)
@@ -26,30 +28,26 @@ bedrock_region = os.environ.get("BEDROCK_REGION", "us-east-1")
 bedrock_url = os.environ.get("BEDROCK_URL", None)
 iam_role = os.environ.get("IAM_ROLE", None)
 lambda_streaming = os.environ.get("LAMBDA_STREAMING", None)
-table_name = os.environ.get("TABLE_NAME", None)
+logs_table_name = os.environ.get("LOGS_TABLE_NAME", None)
+streaming_table_name = os.environ.get("STREAMING_TABLE_NAME", None)
 s3_bucket = os.environ.get("S3_BUCKET", None)
 sagemaker_endpoints = os.environ.get("SAGEMAKER_ENDPOINTS", "") # If FMs are exposed through SageMaker
 sagemaker_region = os.environ.get("SAGEMAKER_REGION", "us-east-1") # If FMs are exposed through SageMaker
 sagemaker_url = os.environ.get("SAGEMAKER_URL", None) # If FMs are exposed through SageMaker
 
-def _read_sagemaker_endpoints():
-    if not sagemaker_endpoints:
-        return {}
-
-    try:
-        endpoints = json.loads(sagemaker_endpoints)
-    except json.JSONDecodeError:
-        try:
-            endpoints = ast.literal_eval(sagemaker_endpoints)
-        except (ValueError, SyntaxError) as e:
-            raise ValueError(f"Error: Invalid format for SAGEMAKER_ENDPOINTS: {e}")
-    else:
-        if not isinstance(endpoints, dict):
-            raise ValueError("Error: SAGEMAKER_ENDPOINTS is not a dictionary")
-
-    return endpoints
-
+"""
+This class handles inference requests for Bedrock models.
+"""
 class BedrockInference:
+    """
+    Initialize the BedrockInference instance.
+
+    Args:
+        bedrock_client (boto3.client): The Bedrock client instance.
+        model_id (str): The ID of the model to use.
+        model_arn (str, optional): The ARN of the model to use. Defaults to None.
+        messages_api (str, optional): Whether to use the messages API. Defaults to "false".
+    """
     def __init__(self, bedrock_client, model_id, model_arn=None, messages_api="false"):
         self.bedrock_client = bedrock_client
         self.model_id = model_id
@@ -58,6 +56,15 @@ class BedrockInference:
         self.input_tokens = 0
         self.output_tokens = 0
 
+    """
+    Decode base64-encoded images in the input messages.
+
+    Args:
+        messages (list): A list of message dictionaries.
+
+    Returns:
+        list: The updated list of message dictionaries with decoded images.
+    """
     def _decode_images(self, messages):
         for item in messages:
             if 'content' in item:
@@ -69,12 +76,37 @@ class BedrockInference:
                         content_item['image']['source']['bytes'] = image_bytes
         return messages
 
+    """
+    Get the number of input tokens.
+
+    Returns:
+        int: The number of input tokens.
+    """
     def get_input_tokens(self):
         return self.input_tokens
 
+    """
+    Get the number of output tokens.
+
+    Returns:
+        int: The number of output tokens.
+    """
     def get_output_tokens(self):
         return self.output_tokens
 
+    """
+    Invoke the Bedrock model to generate embeddings for text inputs.
+
+    Args:
+        body (dict): The request body containing the input text.
+        model_kwargs (dict): Additional model parameters.
+
+    Returns:
+        list: A list of embeddings for the input text.
+
+    Raises:
+        Exception: If an error occurs during the inference process.
+    """
     def invoke_embeddings(self, body, model_kwargs):
         try:
             provider = self.model_id.split(".")[0]
@@ -115,6 +147,19 @@ class BedrockInference:
 
             raise e
 
+    """
+    Invoke the Bedrock model to generate embeddings for image inputs.
+
+    Args:
+        body (dict): The request body containing the input image.
+        model_kwargs (dict): Additional model parameters.
+
+    Returns:
+        list: A list of embeddings for the input image.
+
+    Raises:
+        Exception: If an error occurs during the inference process.
+    """
     def invoke_embeddings_image(self, body, model_kwargs):
         try:
             provider = self.model_id.split(".")[0]
@@ -147,6 +192,22 @@ class BedrockInference:
 
             raise e
 
+    """
+    Invoke the Bedrock model to generate images from text prompts.
+
+    Args:
+        body (dict): The request body containing the text prompts.
+        model_kwargs (dict): Additional model parameters.
+
+    Returns:
+        dict: A dictionary containing the generated images and their dimensions.
+        int: The height of the generated images.
+        int: The width of the generated images.
+        int: The number of steps used to generate the images.
+
+    Raises:
+        Exception: If an error occurs during the inference process.
+    """
     def invoke_image(self, body, model_kwargs):
         try:
             provider = self.model_id.split(".")[0]
@@ -199,6 +260,20 @@ class BedrockInference:
 
             raise e
 
+    """
+    Invoke the Bedrock model to generate text from prompts.
+
+    Args:
+        body (dict): The request body containing the input prompts.
+        model_kwargs (dict, optional): Additional model parameters. Defaults to an empty dict.
+        additional_model_fields (dict, optional): Additional model fields. Defaults to an empty dict.
+
+    Returns:
+        str: The generated text.
+
+    Raises:
+        Exception: If an error occurs during the inference process.
+    """
     def invoke_text(self, body, model_kwargs: dict = dict(), additional_model_fields: dict = dict()):
         try:
             provider = self.model_id.split(".")[0]
@@ -261,7 +336,18 @@ class BedrockInference:
 
             raise e
 
+"""
+This class handles inference requests for SageMaker models.
+"""
 class SageMakerInference:
+    """
+    Initialize the SageMakerInference instance.
+
+    Args:
+        sagemaker_client (boto3.client): The SageMaker client instance.
+        endpoint_name (str): The name of the SageMaker endpoint.
+        messages_api (str, optional): Whether to use the messages API. Defaults to "false".
+    """
     def __init__(self, sagemaker_client, endpoint_name, messages_api="false"):
         self.sagemaker_client = sagemaker_client
         self.endpoint_name = endpoint_name
@@ -269,13 +355,37 @@ class SageMakerInference:
         self.input_tokens = 0
         self.output_tokens = 0
 
+    """
+    Get the number of input tokens.
+
+    Returns:
+        int: The number of input tokens.
+    """
     def get_input_tokens(self):
         return self.input_tokens
 
+    """
+    Get the number of output tokens.
+
+    Returns:
+        int: The number of output tokens.
+    """
     def get_output_tokens(self):
         return self.output_tokens
 
-    ## TBD implementation
+    """
+    Invoke the SageMaker model to generate embeddings for text inputs.
+
+    Args:
+        body (dict): The request body containing the input text.
+        model_kwargs (dict): Additional model parameters.
+
+    Returns:
+        list: A list of embeddings for the input text.
+
+    Raises:
+        Exception: If an error occurs during the inference process.
+    """
     def invoke_embeddings(self, body, model_kwargs):
         try:
             if "InferenceComponentName" in model_kwargs:
@@ -321,6 +431,19 @@ class SageMakerInference:
 
             raise e
 
+    """
+    Invoke the SageMaker model to generate text from prompts.
+
+    Args:
+        body (dict): The request body containing the input prompts.
+        model_kwargs (dict): Additional model parameters.
+
+    Returns:
+        str: The generated text.
+
+    Raises:
+        Exception: If an error occurs during the inference process.
+    """
     def invoke_text(self, body, model_kwargs):
         try:
             if "InferenceComponentName" in model_kwargs:
@@ -477,12 +600,78 @@ def _get_sagemaker_client():
         logger.error(stacktrace)
 
         raise e
+"""
+Return an approximation of tokens in a string
+Args:
+    string (str): Input string
 
+Returns:
+    int: Number of approximated tokens
+"""
 def _get_tokens(string):
     logger.info("Counting approximation tokens")
 
     return math.floor(len(string) / 4)
 
+"""
+Return the json list of enabled SageMaker Endpoints
+
+Returns:
+    dict: json list of enabled SageMaker Endpoints
+"""
+def _read_sagemaker_endpoints():
+    if not sagemaker_endpoints:
+        return {}
+
+    try:
+        endpoints = json.loads(sagemaker_endpoints)
+    except json.JSONDecodeError:
+        try:
+            endpoints = ast.literal_eval(sagemaker_endpoints)
+        except (ValueError, SyntaxError) as e:
+            raise ValueError(f"Error: Invalid format for SAGEMAKER_ENDPOINTS: {e}")
+    else:
+        if not isinstance(endpoints, dict):
+            raise ValueError("Error: SAGEMAKER_ENDPOINTS is not a dictionary")
+
+    return endpoints
+
+"""
+Save model logs in CloudWatch and DynamoDB
+
+Args:
+    logs (dict): logs generated by the model
+    
+Raises:
+        Exception: If an error occurs during the cloudwatch or dynamodb save.
+"""
+def _store_logs(logs):
+    try:
+        cloudwatch_logger.info(logs)
+
+        current_datetime = datetime.datetime.now()
+        formatted_datetime = current_datetime.strftime("%Y-%m-%d %H:%M:%S")
+
+        logs["date"] = formatted_datetime
+        logs["ttl"] = int(time.time()) + 86400
+
+        logs_table_connection = dynamodb.Table(logs_table_name)
+        logs_table_connection.put_item(Item=logs)
+    except Exception as e:
+        stacktrace = traceback.format_exc()
+        logger.error(stacktrace)
+
+        raise e
+
+"""
+This function handles inference requests for Bedrock models.
+
+Args:
+    event (dict): The event object containing the request details.
+
+Returns:
+    dict: A dictionary containing the response status code and body.
+"""
 def bedrock_handler(event):
     logger.info("Bedrock Endpoint")
 
@@ -531,7 +720,8 @@ def bedrock_handler(event):
                 "width": None,
                 "steps": None
             }
-            cloudwatch_logger.info(logs)
+
+            _store_logs(logs)
 
         elif embeddings_image:
             logger.info("Request type: embeddings-image")
@@ -548,8 +738,8 @@ def bedrock_handler(event):
                 "width": None,
                 "steps": None
             }
-            cloudwatch_logger.info(logs)
 
+            _store_logs(logs)
         elif image:
             logger.info("Request type: image")
             response, height, width, steps = bedrock_inference.invoke_image(body, model_kwargs)
@@ -565,8 +755,8 @@ def bedrock_handler(event):
                 "width": width,
                 "steps": steps
             }
-            cloudwatch_logger.info(logs)
 
+            _store_logs(logs)
         else:
             logger.info("Request type: text")
 
@@ -599,13 +789,13 @@ def bedrock_handler(event):
                     "width": None,
                     "steps": None
                 }
-                cloudwatch_logger.info(logs)
 
+                _store_logs(logs)
         return results
 
     else:
         logger.info("Check streaming request")
-        connections = dynamodb.Table(table_name)
+        connections = dynamodb.Table(streaming_table_name)
         response = connections.get_item(Key={"composite_pk": f"{custom_request_id}_{api_key}"})
 
         if "Item" in response:
@@ -626,12 +816,22 @@ def bedrock_handler(event):
                 "width": None,
                 "steps": None
             }
-            cloudwatch_logger.info(logs)
+
+            _store_logs(logs)
         else:
             results = {"statusCode": 200, "body": json.dumps([{"request_id": custom_request_id}])}
 
         return results
 
+"""
+This function handles inference requests for SageMaker models.
+
+Args:
+    event (dict): The event object containing the request details.
+
+Returns:
+    dict: A dictionary containing the response status code and body.
+"""
 def sagemaker_handler(event):
     logger.info("SageMaker Endpoint")
 
@@ -674,7 +874,8 @@ def sagemaker_handler(event):
                 "width": None,
                 "steps": None
             }
-            cloudwatch_logger.info(logs)
+
+            _store_logs(logs)
         else:
             logger.info("Request type: text")
 
@@ -706,13 +907,14 @@ def sagemaker_handler(event):
                     "width": None,
                     "steps": None
                 }
-                cloudwatch_logger.info(logs)
+
+                _store_logs(logs)
 
         return results
 
     else:
         logger.info("Check streaming request")
-        connections = dynamodb.Table(table_name)
+        connections = dynamodb.Table(streaming_table_name)
         response = connections.get_item(Key={"composite_pk": f"{custom_request_id}_{api_key}"})
 
         if "Item" in response:

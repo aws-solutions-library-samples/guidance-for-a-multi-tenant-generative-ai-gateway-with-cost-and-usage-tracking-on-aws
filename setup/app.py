@@ -107,10 +107,17 @@ class BedrockAPIStack(Stack):
 
         dynamodb_class = DynamoDB(
             scope=self,
-            id="dynamodb_stack",
+            id="streaming_dynamodb_stack",
         )
 
-        table = dynamodb_class.build()
+        table_streaming = dynamodb_class.build(suffix="streaming_messages", key_name="composite_pk")
+
+        dynamodb_class_logs = DynamoDB(
+            scope=self,
+            id="logs_dynamodb_stack"
+        )
+
+        table_logs = dynamodb_class_logs.build(suffix="logs", key_name="requestId")
 
         # ==================================================
         # ================= S3 BUCKETS =====================
@@ -186,7 +193,7 @@ class BedrockAPIStack(Stack):
             environment={
                 "BEDROCK_URL": self.bedrock_runtime_endpoint_url,
                 "BEDROCK_REGION": self.region,
-                "TABLE_NAME": table.table_name,
+                "STREAMING_TABLE_NAME": table_streaming.table_name,
                 "S3_BUCKET": s3_bucket_configs.bucket_name,
                 "SAGEMAKER_ENDPOINTS": self.sagemaker_endpoints
             },
@@ -205,7 +212,8 @@ class BedrockAPIStack(Stack):
                 "BEDROCK_URL": self.bedrock_runtime_endpoint_url,
                 "BEDROCK_REGION": self.region,
                 "LAMBDA_STREAMING": bedrock_invoke_model_streaming.function_name,
-                "TABLE_NAME": table.table_name,
+                "LOGS_TABLE_NAME": table_logs.table_name,
+                "STREAMING_TABLE_NAME": table_streaming.table_name,
                 "S3_BUCKET": s3_bucket_configs.bucket_name,
                 "SAGEMAKER_ENDPOINTS": self.sagemaker_endpoints
             },
