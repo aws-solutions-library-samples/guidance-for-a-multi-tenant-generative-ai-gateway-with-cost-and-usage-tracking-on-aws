@@ -1,3 +1,4 @@
+import ast
 import base64
 import boto3
 from botocore.config import Config
@@ -32,6 +33,23 @@ sagemaker_url = os.environ.get("SAGEMAKER_URL", None) # If FMs are exposed throu
 
 # Constants
 GUARDRAILS_BODY_KEY = "amazon-bedrock-guardrailAssessment"
+
+def _read_sagemaker_endpoints():
+    if not sagemaker_endpoints:
+        return {}
+
+    try:
+        endpoints = json.loads(sagemaker_endpoints)
+    except json.JSONDecodeError:
+        try:
+            endpoints = ast.literal_eval(sagemaker_endpoints)
+        except (ValueError, SyntaxError) as e:
+            raise ValueError(f"Error: Invalid format for SAGEMAKER_ENDPOINTS: {e}")
+    else:
+        if not isinstance(endpoints, dict):
+            raise ValueError("Error: SAGEMAKER_ENDPOINTS is not a dictionary")
+
+    return endpoints
 
 class BedrockInferenceStream:
     def __init__(self, bedrock_client, model_id, model_arn=None, messages_api="false"):
@@ -568,7 +586,7 @@ def sagemaker_handler(event: Dict) -> Dict:
 
         logger.info(f"Input body: {body}")
 
-        endpoints = json.loads(sagemaker_endpoints)
+        endpoints = _read_sagemaker_endpoints()
         endpoint_name = endpoints[model_id]
 
         sagemaker_streaming = SageMakerInferenceStream(sagemaker_client, endpoint_name)
@@ -630,7 +648,7 @@ def lambda_handler(event: Dict, context) -> Dict:
 
     model_id = event["queryStringParameters"]['model_id']
 
-    endpoints = json.loads(sagemaker_endpoints) if sagemaker_endpoints else {}
+    endpoints = _read_sagemaker_endpoints()
 
     if model_id in endpoints:
         return sagemaker_handler(event)

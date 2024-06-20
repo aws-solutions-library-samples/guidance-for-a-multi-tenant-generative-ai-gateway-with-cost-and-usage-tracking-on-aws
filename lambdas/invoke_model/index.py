@@ -1,3 +1,4 @@
+import ast
 from aws_lambda_powertools import Logger
 import base64
 import boto3
@@ -31,8 +32,25 @@ sagemaker_endpoints = os.environ.get("SAGEMAKER_ENDPOINTS", "") # If FMs are exp
 sagemaker_region = os.environ.get("SAGEMAKER_REGION", "us-east-1") # If FMs are exposed through SageMaker
 sagemaker_url = os.environ.get("SAGEMAKER_URL", None) # If FMs are exposed through SageMaker
 
+def _read_sagemaker_endpoints():
+    if not sagemaker_endpoints:
+        return {}
+
+    try:
+        endpoints = json.loads(sagemaker_endpoints)
+    except json.JSONDecodeError:
+        try:
+            endpoints = ast.literal_eval(sagemaker_endpoints)
+        except (ValueError, SyntaxError) as e:
+            raise ValueError(f"Error: Invalid format for SAGEMAKER_ENDPOINTS: {e}")
+    else:
+        if not isinstance(endpoints, dict):
+            raise ValueError("Error: SAGEMAKER_ENDPOINTS is not a dictionary")
+
+    return endpoints
+
 class BedrockInference:
-    def __init__(self, bedrock_client, model_id, model_arn=None, messages_api="false", system=None):
+    def __init__(self, bedrock_client, model_id, model_arn=None, messages_api="false"):
         self.bedrock_client = bedrock_client
         self.model_id = model_id
         self.model_arn = model_arn
@@ -244,9 +262,10 @@ class BedrockInference:
             raise e
 
 class SageMakerInference:
-    def __init__(self, sagemaker_client, endpoint_name):
+    def __init__(self, sagemaker_client, endpoint_name, messages_api="false"):
         self.sagemaker_client = sagemaker_client
         self.endpoint_name = endpoint_name
+        self.messages_api = messages_api
         self.input_tokens = 0
         self.output_tokens = 0
 
@@ -258,27 +277,102 @@ class SageMakerInference:
 
     ## TBD implementation
     def invoke_embeddings(self, body, model_kwargs):
-        pass
-
-    def invoke_text(self, body, model_kwargs):
         try:
-            request_body = json.dumps({
-                "inputs": body["inputs"],
-                "parameters": model_kwargs
-            })
+            if "InferenceComponentName" in model_kwargs:
+                inference_component = model_kwargs.pop("InferenceComponentName")
+            else:
+                inference_component = None
 
-            response = self.sagemaker_client.invoke_endpoint(
-                EndpointName=self.endpoint_name,
-                ContentType="application/json",
-                Body=request_body
-            )
+            if isinstance(body["inputs"], dict):
+                # If body["inputs"] is a dictionary, merge it with model_kwargs
+                request_data = {**body["inputs"], **model_kwargs}
+            else:
+                # If body["inputs"] is not a dictionary, use the original format
+                request_data = {
+                    "inputs": body["inputs"],
+                    "parameters": model_kwargs
+                }
+
+            request_body = json.dumps(request_data)
+
+            if inference_component:
+                response = self.sagemaker_client.invoke_endpoint(
+                    EndpointName=self.endpoint_name,
+                    ContentType="application/json",
+                    Body=request_body,
+                    InferenceComponentName=inference_component
+                )
+            else:
+                response = self.sagemaker_client.invoke_endpoint(
+                    EndpointName=self.endpoint_name,
+                    ContentType="application/json",
+                    Body=request_body
+                )
 
             response = json.loads(response['Body'].read().decode())
 
-            self.input_tokens = _get_tokens(body["inputs"])
-            self.output_tokens = _get_tokens(response[0]["generated_text"])
+            self.input_tokens = _get_tokens(body["inputs"][list(body["inputs"].keys())[0]])
 
-            return response[0]["generated_text"]
+            return response["embedding"]
+        except Exception as e:
+            stacktrace = traceback.format_exc()
+
+            logger.error(stacktrace)
+
+            raise e
+
+    def invoke_text(self, body, model_kwargs):
+        try:
+            if "InferenceComponentName" in model_kwargs:
+                inference_component = model_kwargs.pop("InferenceComponentName")
+            else:
+                inference_component = None
+
+            is_messages_api = self.messages_api.lower() in ["true"]
+
+            if is_messages_api:
+                request_data = {"messages": body["inputs"], **model_kwargs}
+            else:
+                if isinstance(body["inputs"], dict):
+                    # If body["inputs"] is a dictionary, merge it with model_kwargs
+                    request_data = {**body["inputs"], **model_kwargs}
+                else:
+                    # If body["inputs"] is not a dictionary, use the original format
+                    request_data = {
+                        "inputs": body["inputs"],
+                        "parameters": model_kwargs
+                    }
+
+            request_body = json.dumps(request_data)
+
+            if inference_component:
+                response = self.sagemaker_client.invoke_endpoint(
+                    EndpointName=self.endpoint_name,
+                    ContentType="application/json",
+                    Body=request_body,
+                    InferenceComponentName=inference_component
+                )
+            else:
+                response = self.sagemaker_client.invoke_endpoint(
+                    EndpointName=self.endpoint_name,
+                    ContentType="application/json",
+                    Body=request_body
+                )
+
+            response = json.loads(response['Body'].read().decode())
+
+            if is_messages_api:
+                response = response["choices"][0]["message"]["content"].strip()
+
+                self.input_tokens = _get_tokens(body["inputs"])
+                self.output_tokens = _get_tokens(response)
+
+                return response
+            else:
+                self.input_tokens = _get_tokens(body["inputs"])
+                self.output_tokens = _get_tokens(response[0]["generated_text"])
+
+                return response[0]["generated_text"]
         except Exception as e:
             stacktrace = traceback.format_exc()
 
@@ -400,9 +494,6 @@ def bedrock_handler(event):
     bedrock_client = _get_bedrock_client()
     custom_request_id = event["queryStringParameters"].get("requestId")
     messages_api = event["headers"].get("messages_api", "false")
-
-    if "system" in event["headers"]:
-        del event["headers"]["system"]
 
     bedrock_inference = BedrockInference(
         bedrock_client=bedrock_client,
@@ -549,10 +640,13 @@ def sagemaker_handler(event):
     api_key = event["headers"]["x-api-key"]
 
     sagemaker_client = _get_sagemaker_client()
+
+    messages_api = event["headers"].get("messages_api", "false")
     custom_request_id = event["queryStringParameters"].get("requestId")
-    endpoints = json.loads(sagemaker_endpoints)
+
+    endpoints = _read_sagemaker_endpoints()
     endpoint_name = endpoints[model_id]
-    sagemaker_inference = SageMakerInference(sagemaker_client, endpoint_name)
+    sagemaker_inference = SageMakerInference(sagemaker_client, endpoint_name, messages_api)
 
     if custom_request_id is None:
         request_id = event["requestContext"]["requestId"]
@@ -566,7 +660,21 @@ def sagemaker_handler(event):
         model_kwargs = body.get("parameters", {})
 
         if embeddings:
-            results = {"statusCode": 500, "body": "SageMaker Embeddings not supported yet!"}
+            response = sagemaker_inference.invoke_embeddings(body, model_kwargs)
+            results = {"statusCode": 200, "body": json.dumps([{"embedding": response}])}
+
+            logs = {
+                "team_id": team_id,
+                "requestId": request_id,
+                "region": sagemaker_region,
+                "model_id": model_id,
+                "inputTokens": sagemaker_inference.get_input_tokens(),
+                "outputTokens": 0,
+                "height": None,
+                "width": None,
+                "steps": None
+            }
+            cloudwatch_logger.info(logs)
         else:
             logger.info("Request type: text")
 
@@ -641,7 +749,7 @@ def lambda_handler(event, context):
             return {"statusCode": 400, "body": "Bad Request"}
 
         model_id = event["queryStringParameters"]["model_id"]
-        endpoints = json.loads(sagemaker_endpoints) if sagemaker_endpoints else {}
+        endpoints = _read_sagemaker_endpoints()
 
         if model_id in endpoints:
             return sagemaker_handler(event)

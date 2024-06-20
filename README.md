@@ -1,7 +1,7 @@
-# Build and track a internal SaaS Gateway on AWS
+# Multi-tenant Generative AI Gateway on AWS
 
-In this repository, we show you how to build an internal SaaS service to access foundation models with [Amazon Bedrock](https://aws.amazon.com/bedrock/) 
-and [Amazon SageMaker](https://aws.amazon.com/sagemaker/) in a multi-tenant architecture. 
+In this repository, we show you how to build a multi-tenant SaaS solution to access foundation models with [Amazon Bedrock](https://aws.amazon.com/bedrock/) 
+and [Amazon SageMaker](https://aws.amazon.com/sagemaker/).
 
 An internal software as a service (SaaS) for foundation models can address governance requirements while providing a simple 
 and consistent interface for the end users. API Gateway is a common design pattern that enable consumption of services with 
@@ -14,6 +14,7 @@ gives flexibility to adapt to changing model versions, architectures and invocat
 4. [Deploy Stack](#deploy-stack)
    1. [Full Deployment](#full-deployment)
    2. [API Key Deployment](#api-key-deployment)
+5. [SageMaker Endpoints](#sagemaker-endpoints)
 
 ## Project Description
 
@@ -252,28 +253,6 @@ chmod +x deploy_stack.sh
 ./deploy_stack.sh
 ```
 
-#### Optional
-
-Add FMs through Amazon SageMaker:
-
-We can expose Foundation Models hosted in Amazon SageMaker by providing the endpoint names in a JSON format as described in the example below:
-
-```
-[
-  {
-    "STACK_PREFIX": "", # unit 1 with dedicated SaaS resources
-    "BEDROCK_ENDPOINT": "https://bedrock-runtime.{}.amazonaws.com", # bedrock-runtime endpoint used for invoking Amazon Bedrock
-    "BEDROCK_REQUIREMENTS": "boto3>=1.34.62 awscli>=1.32.62 botocore>=1.34.62", # Requirements for Amazon Bedrock
-    "LANGCHAIN_REQUIREMENTS": "aws-lambda-powertools langchain==0.1.12 pydantic PyYaml", # python modules installed for langchain layer
-    "PANDAS_REQUIREMENTS": "pandas", # python modules installed for pandas layer
-    "VPC_CIDR": "10.10.0.0/16" # CIDR used for the private VPC Env,
-    "API_THROTTLING_RATE": 10000, #Throttling limit assigned to the usage plan
-    "API_BURST_RATE": 5000 # Burst limit assigned to the usage plan,
-    "SAGEMAKER_ENDPOINTS": "{\"Mixtral 8x7B\": \"Mixtral-SM-Endpoint\"}" # List of SageMaker endpoints
-  }
-]
-```
-
 ### API Key Deployment
 
 #### Step 1
@@ -308,6 +287,42 @@ chmod +x deploy_stack.sh
 ```
 ./deploy_stack.sh
 ```
+
+### SageMaker Endpoints
+
+Add FMs through Amazon SageMaker:
+
+We can expose Foundation Models hosted in Amazon SageMaker by providing the endpoint names in a JSON format in a string representation, 
+as described in the example below:
+
+```
+[
+  {
+    "STACK_PREFIX": "", # unit 1 with dedicated SaaS resources
+    "BEDROCK_ENDPOINT": "https://bedrock-runtime.{}.amazonaws.com", # bedrock-runtime endpoint used for invoking Amazon Bedrock
+    "BEDROCK_REQUIREMENTS": "boto3>=1.34.62 awscli>=1.32.62 botocore>=1.34.62", # Requirements for Amazon Bedrock
+    "LANGCHAIN_REQUIREMENTS": "aws-lambda-powertools langchain==0.1.12 pydantic PyYaml", # python modules installed for langchain layer
+    "PANDAS_REQUIREMENTS": "pandas", # python modules installed for pandas layer
+    "VPC_CIDR": "10.10.0.0/16" # CIDR used for the private VPC Env,
+    "API_THROTTLING_RATE": 10000, #Throttling limit assigned to the usage plan
+    "API_BURST_RATE": 5000 # Burst limit assigned to the usage plan,
+    "SAGEMAKER_ENDPOINTS": "{'Mixtral 8x7B': 'Mixtral-SM-Endpoint'}" # List of SageMaker endpoints
+  }
+]
+```
+
+#### InferenceComponentName with SageMaker Endpoint
+
+We can provide `InferenceComponentName`specification for the model invocation. Please refer to the notebook 
+[01_bedrock_api.ipynb](./notebooks/01_bedrock_api.ipynb) for an example
+
+#### Important note
+
+Amazon SageMaker Hosting is providing flexibility in the definition of the inference container. This solution is currently 
+supporting general purpose inference scripts provided by SageMaker JumpStart and Hugging Face TGI container.
+
+It is required to adapt the lambda functions [invoke_model](./lambdas/invoke_model) and [invoke_model_streaming](./lambdas/invoke_model_streaming)
+in case of custom inference scripts.
 
 ## Reading resources
 For additional reading, refer to:
