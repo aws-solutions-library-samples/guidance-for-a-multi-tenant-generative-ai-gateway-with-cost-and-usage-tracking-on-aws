@@ -35,7 +35,7 @@ class BedrockAPIStack(Stack):
             Construct, id: str,
             config: dict,
             **kwargs) -> None:
-        super().__init__(scope, id, **kwargs)
+        super().__init__(scope, id, description=config["description"], **kwargs)
         # ==================================================
         # ============== STATIC PARAMETERS =================
         # ==================================================
@@ -351,9 +351,12 @@ class BedrockAPIStack(Stack):
 
 app = App()
 
+project_tag = "SO9482"
 configs = _load_configs("./configs.json")
 
 for config in configs:
+    config["description"] = f"{project_tag} - This template creates the required AWS resources for accessiing LLMs in Amazon Bedrock and Amazon SageMaker through a centralized gateway, by monitoring usage and costs"
+
     api_stack = BedrockAPIStack(
         scope=app,
         id=f"{config['STACK_PREFIX']}-bedrock-saas",
@@ -367,6 +370,7 @@ for config in configs:
 
     # Add a cost tag to all constructs in the stack
     Tags.of(api_stack).add("Tenant", api_stack.prefix_id)
+    Tags.of(api_stack).add("Project", project_tag)
 
 try:
     app.synth()
