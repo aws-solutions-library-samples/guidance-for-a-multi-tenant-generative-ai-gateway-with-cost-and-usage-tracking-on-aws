@@ -257,7 +257,10 @@ chmod +x deploy_stack.sh
 
 #### Step 1
 
+##### Option 1
+
 Edit the global configs used in the CDK Stack. For each organizational units that requires a dedicated API Key associated to a crated API Gateway REST API, create an entry in [setup/configs.json](./setup/configs.json)
+by specifying `API_GATEWAY_ID` and `API_GATEWAY_RESOURCE_ID`:
 
 ```
 [
@@ -265,6 +268,23 @@ Edit the global configs used in the CDK Stack. For each organizational units tha
     "STACK_PREFIX": "", # unit 1 with dedicated SaaS resources
     "API_GATEWAY_ID": "", # Rest API ID
     "API_GATEWAY_RESOURCE_ID": "", # Resource ID of the Rest API
+    "API_THROTTLING_RATE": 10000, #Throttling limit assigned to the usage plan
+    "API_BURST_RATE": 5000 # Burst limit assigned to the usage plan
+    
+  }
+]
+```
+
+##### Option 2
+
+Edit the global configs used in the CDK Stack. For each organizational units that requires a dedicated API Key associated to a crated API Gateway REST API, create an entry in [setup/configs.json](./setup/configs.json)
+by specifying `PARENT_STACK_PREFIX`:
+
+```
+[
+  {
+    "STACK_PREFIX": "", # unit 1 with dedicated SaaS resources
+    "PARENT_STACK_PREFIX": "", # unit parent you want to import configurations
     "API_THROTTLING_RATE": 10000, #Throttling limit assigned to the usage plan
     "API_BURST_RATE": 5000 # Burst limit assigned to the usage plan
     

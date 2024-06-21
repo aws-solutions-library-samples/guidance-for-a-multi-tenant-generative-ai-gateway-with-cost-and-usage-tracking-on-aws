@@ -1,5 +1,6 @@
 from aws_cdk import (
     App,
+    Fn,
     CfnOutput,
     RemovalPolicy,
     Stack,
@@ -43,16 +44,13 @@ class BedrockAPIStack(Stack):
         self.lambdas_directory = "./../lambdas"
         self.prefix_id = config.get("STACK_PREFIX", None)
         self.vpc_cidr = config.get("VPC_CIDR", None)
+        self.bedrock_endpoint_url = "https://bedrock.{}.amazonaws.com".format(self.region)
+        self.bedrock_runtime_endpoint_url = "https://bedrock-runtime.{}.amazonaws.com".format(self.region)
 
         # ==================================================
         # ================= PARAMETERS =====================
         # ==================================================
-        self.bedrock_endpoint_url = config.get("BEDROCK_ENDPOINT", None)
-        if self.bedrock_endpoint_url is not None:
-            self.bedrock_endpoint_url = self.bedrock_endpoint_url.format(self.region)
-        self.bedrock_runtime_endpoint_url = config.get("BEDROCK_RUNTIME_ENDPOINT", None)
-        if self.bedrock_runtime_endpoint_url is not None:
-            self.bedrock_runtime_endpoint_url = self.bedrock_runtime_endpoint_url.format(self.region)
+        self.parent_prefix_id = config.get("PARENT_STACK_PREFIX", None)
         self.bedrock_requirements = config.get("BEDROCK_REQUIREMENTS", None)
         self.langchain_requirements = config.get("LANGCHAIN_REQUIREMENTS", None)
         self.pandas_requirements = config.get("PANDAS_REQUIREMENTS", None)
@@ -61,19 +59,45 @@ class BedrockAPIStack(Stack):
         self.api_gw_id = config.get("API_GATEWAY_ID", None)
         self.api_gw_resource_id = config.get("API_GATEWAY_RESOURCE_ID", None)
         self.sagemaker_endpoints = config.get("SAGEMAKER_ENDPOINTS", "")
-        self.sagemaker_url = config.get("SAGEMAKER_URL", None)
-        self.sagemaker_region = config.get("SAGEMAKER_REGION", None)
 
         if self.prefix_id is None:
             raise Exception("STACK_PREFIX not defined")
 
-        if self.vpc_cidr is not None and self.bedrock_endpoint_url is not None and self.bedrock_requirements is not None and self.langchain_requirements is not None and self.pandas_requirements is not None:
+        if self.api_throttling_rate is None:
+            raise Exception("You must configure throttling for API Gateway")
+
+        if self.api_burst_rate is None:
+            raise Exception("You must configure burst rate for API Gateway")
+
+        if (self.vpc_cidr is not None and
+                self.bedrock_requirements is not None and
+                self.langchain_requirements is not None and
+                self.pandas_requirements is not None
+        ):
+            if self.api_gw_id is not None:
+                raise Exception("API Gateway ID is required only for the partial deployment of an API Key")
+            if self.api_gw_resource_id is not None:
+                raise Exception("API Gateway Resource ID is required only for the partial deployment of an API Key")
+
+            print("Deploying full API")
             self.full_deployment = True
         else:
             if self.api_gw_id is not None and self.api_gw_resource_id is not None:
+
+                print("Deploying partial API")
                 self.full_deployment = False
             else:
-                raise Exception("API_GATEWAY_ID and API_GATEWAY_RESOURCE_ID not defined")
+                if self.parent_prefix_id is not None:
+                    try:
+                            self.api_gw_id = Fn.import_value(f"{self.parent_prefix_id}ApiGatewayId")
+                            self.api_gw_resource_id = Fn.import_value(f"{self.parent_prefix_id}ApiGatewayId")
+
+                            print("Deploying partial API")
+                            self.full_deployment = False
+                    except Exception as e:
+                        raise Exception("API Gateway ID and API Gateway Resource ID are required. Make sure your are fully deploying the infrastructure or specify valid IDs")
+                else:
+                    raise Exception("You must specify a PARENT_STACK_PREFIX for importing API Gateway informations")
 
     def build_full(self):
         # ==================================================
