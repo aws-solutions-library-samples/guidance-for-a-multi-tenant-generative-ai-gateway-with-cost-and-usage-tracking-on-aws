@@ -1,7 +1,9 @@
-# Multi-tenant Generative AI Gateway on AWS
+# multi-tenant Generative AI gateway with cost and usage tracking on AWS
 
 In this repository, we show you how to build a multi-tenant SaaS solution to access foundation models with [Amazon Bedrock](https://aws.amazon.com/bedrock/) 
 and [Amazon SageMaker](https://aws.amazon.com/sagemaker/).
+
+Enterprise IT teams may need to track the usage of FMs across teams, chargeback costs and provide visibility to the relevant cost center in the LOB. Additionally, they may need to regulate access to different models per team. For example, if only specific FMs may be approved for use.
 
 An internal software as a service (SaaS) for foundation models can address governance requirements while providing a simple 
 and consistent interface for the end users. API Gateway is a common design pattern that enable consumption of services with 
