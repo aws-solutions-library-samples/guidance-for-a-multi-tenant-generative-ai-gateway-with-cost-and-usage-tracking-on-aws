@@ -1,4 +1,4 @@
-# multi-tenant Generative AI gateway with cost and usage tracking on AWS
+# Multi-tenant Generative AI gateway with cost and usage tracking on AWS
 
 In this repository, we show you how to build a multi-tenant SaaS solution to access foundation models with [Amazon Bedrock](https://aws.amazon.com/bedrock/) 
 and [Amazon SageMaker](https://aws.amazon.com/sagemaker/).
