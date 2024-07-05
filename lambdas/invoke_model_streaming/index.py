@@ -43,6 +43,35 @@ class BedrockInferenceStream:
         self.input_tokens = 0
         self.output_tokens = 0
 
+    """
+    Decode base64-encoded documents in the input messages.
+
+    Args:
+        messages (list): A list of message dictionaries.
+
+    Returns:
+        list: The updated list of message dictionaries with decoded images.
+    """
+    def _decode_documents(self, messages):
+        for item in messages:
+            if 'content' in item:
+                for content_item in item['content']:
+                    if 'document' in content_item and 'bytes' in content_item['document']['source']:
+                        encoded_document = content_item['document']['source']['bytes']
+                        base64_bytes = encoded_document.encode('utf-8')
+                        document_bytes = base64.b64decode(base64_bytes)
+                        content_item['document']['source']['bytes'] = document_bytes
+        return messages
+
+    """
+    Decode base64-encoded images in the input messages.
+
+    Args:
+        messages (list): A list of message dictionaries.
+
+    Returns:
+        list: The updated list of message dictionaries with decoded images.
+    """
     def _decode_images(self, messages):
         for item in messages:
             if 'content' in item:
@@ -70,7 +99,8 @@ class BedrockInferenceStream:
                 if "system" in model_kwargs:
                     del model_kwargs["system"]
 
-                messages = self._decode_images(body["inputs"])
+                messages = self._decode_documents(body["inputs"])
+                messages = self._decode_images(messages)
 
                 modelId = self.model_arn if self.model_arn is not None else self.model_id
 
@@ -488,7 +518,6 @@ def bedrock_handler(event: Dict) -> Dict:
         model_kwargs = body.get("parameters", {})
         additional_model_fields = body.get("additional_model_fields", {})
         logger.info(f"Input body: {body}")
-
 
         bedrock_streaming = BedrockInferenceStream(
             bedrock_client=bedrock_client,
