@@ -1,8 +1,8 @@
 [
   {
     "STACK_PREFIX": "",
-    "BEDROCK_REQUIREMENTS": "boto3>=1.34.139 awscli>=1.33.21 botocore>=1.34.139",
-    "LANGCHAIN_REQUIREMENTS": "aws-lambda-powertools langchain==0.2.6 langchain-community==0.2.6 pydantic PyYaml",
+    "BEDROCK_REQUIREMENTS": "boto3>=1.35.5 awscli>=1.34.5 botocore>=1.35.5",
+    "LANGCHAIN_REQUIREMENTS": "aws-lambda-powertools langchain==0.2.14 langchain-community==0.2.12 pydantic PyYaml",
     "PANDAS_REQUIREMENTS": "pandas",
     "SAGEMAKER_ENDPOINTS": "",
     "VPC_CIDR": "10.10.0.0/16",
