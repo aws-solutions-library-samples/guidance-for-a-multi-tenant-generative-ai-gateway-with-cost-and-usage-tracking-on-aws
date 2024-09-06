@@ -13,6 +13,18 @@ if len(logging.getLogger().handlers) > 0:
 else:
     logging.basicConfig(level=logging.INFO)
 
+def _is_in_model_list(model_id, model_list):
+    if model_id in model_list:
+        return True
+    else:
+        parts = model_id.split('.')
+        for i in range(len(parts), 0, -1):
+            partial_id = '.'.join(parts[-i:])
+            if partial_id in model_list:
+                return True
+
+    return False
+
 def _read_model_list(filename):
     try:
         with open(filename, "r", encoding="utf-8") as f:
@@ -27,10 +39,17 @@ def _read_model_list(filename):
 
 def get_model_pricing(model_id, MODEL_PRICES):
     matched = [v for k, v in MODEL_PRICES.items() if model_id in k]
-    if not matched:
-        return None
-    else:
+    if matched:
         return matched[0]
+    else:
+        parts = model_id.split('.')
+        for i in range(len(parts), 0, -1):
+            partial_id = '.'.join(parts[-i:])
+            matched = [v for k, v in MODEL_PRICES.items() if partial_id in k]
+            if matched:
+                return matched[0]
+
+        return None
 
 def run_query(query, log_group_name, date=None):
     cloudwatch = boto3.client("logs")
@@ -148,11 +167,11 @@ def calculate_cost(row):
 
         model_list = models[region]
 
-        if model_id in list(model_list["text"].keys()):
+        if _is_in_model_list(model_id, list(model_list["text"].keys())):
             input_token_count, output_token_count, input_cost, output_cost = model_price_text(model_list["text"], row)
-        elif model_id in list(model_list["embeddings"].keys()):
+        elif _is_in_model_list(model_id, list(model_list["embeddings"].keys())):
             input_token_count, output_token_count, input_cost, output_cost = model_price_embeddings(model_list["embeddings"], row)
-        elif model_id in list(model_list["image"].keys()):
+        elif _is_in_model_list(model_id, list(model_list["image"].keys())):
             input_token_count, output_token_count, input_cost, output_cost = model_price_image(model_list["image"], row)
         else:
             input_token_count, output_token_count, input_cost, output_cost = 0.0, 0.0, 0.0, 0.0

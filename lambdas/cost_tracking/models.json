@@ -50,7 +50,7 @@
                      "premium": 0.012
                   }
              },
-            "stability.stable-diffusion-xl": {
+            "stability.stable-diffusion-xl-v1": {
                   "512x512": {
                       "standard": 0.018,
                       "premium": 0.036
