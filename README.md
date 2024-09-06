@@ -12,7 +12,7 @@ gives flexibility to adapt to changing model versions, architectures and invocat
 
 1. [Project Description](#project-description)
 2. [API Specifications](#api-specifications)
-3. [API Consumption](#api-usage)
+3. [API Consumption](#api-consumption)
 3. [Reporting Costs Example](#reporting-costs-example)
 4. [Deploy Stack](#deploy-stack)
    1. [Full Deployment](#full-deployment)
