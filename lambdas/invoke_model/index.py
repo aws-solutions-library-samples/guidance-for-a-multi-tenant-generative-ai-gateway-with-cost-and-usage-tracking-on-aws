@@ -223,6 +223,7 @@ def bedrock_handler(event):
         body = json.loads(event["body"])
         model_kwargs = body.get("parameters", {})
         additional_model_fields = body.get("additional_model_fields", {})
+        tool_config = body.get("tool_config", {})
 
         if embeddings:
             logger.info("Request type: embeddings")
@@ -295,7 +296,7 @@ def bedrock_handler(event):
                 results = {"statusCode": 200, "body": json.dumps([{"request_id": request_id}])}
 
             else:
-                response = bedrock_inference.invoke_text(body, model_kwargs, additional_model_fields)
+                response = bedrock_inference.invoke_text(body, model_kwargs, additional_model_fields, tool_config)
                 results = {"statusCode": 200, "body": json.dumps([{"generated_text": response}])}
                 logs = {
                     "team_id": team_id,

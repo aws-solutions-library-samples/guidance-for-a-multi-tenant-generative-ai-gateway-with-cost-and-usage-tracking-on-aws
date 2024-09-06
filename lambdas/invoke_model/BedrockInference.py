@@ -283,7 +283,7 @@ class BedrockInference:
     Raises:
         Exception: If an error occurs during the inference process.
     """
-    def invoke_text(self, body, model_kwargs: dict = dict(), additional_model_fields: dict = dict()):
+    def invoke_text(self, body, model_kwargs: dict = dict(), additional_model_fields: dict = dict(), tool_config: dict = dict()):
         try:
             provider = self.model_id.split(".")[0]
             is_messages_api = self.messages_api.lower() in ["true"]
@@ -297,13 +297,25 @@ class BedrockInference:
                 messages = self._decode_documents(body["inputs"])
                 messages = self._decode_images(messages)
 
-                response = self.bedrock_client.converse(
-                    modelId=self.model_id,
-                    messages=messages,
-                    system=system,
-                    inferenceConfig=model_kwargs,
-                    additionalModelRequestFields=additional_model_fields
-                )
+                if bool(tool_config):
+                    logger.info(f"Using tools {tool_config}")
+
+                    response = self.bedrock_client.converse(
+                        modelId=self.model_id,
+                        messages=messages,
+                        system=system,
+                        inferenceConfig=model_kwargs,
+                        additionalModelRequestFields=additional_model_fields,
+                        toolConfig=tool_config
+                    )
+                else:
+                    response = self.bedrock_client.converse(
+                        modelId=self.model_id,
+                        messages=messages,
+                        system=system,
+                        inferenceConfig=model_kwargs,
+                        additionalModelRequestFields=additional_model_fields
+                    )
 
                 output_message = response['output']['message']
 
@@ -311,11 +323,18 @@ class BedrockInference:
                 self.output_tokens = response['usage']['outputTokens']
 
                 tmp_response = ""
+                tmp_tools = []
 
                 for content in output_message['content']:
-                    tmp_response += content['text'] + " "
+                    if "text" in content:
+                        tmp_response += content['text'] + " "
+                    if "toolUse" in content:
+                        tmp_tools.append({"toolUse": content["toolUse"]})
 
-                response = tmp_response.rstrip()
+                if len(tmp_tools) > 0:
+                    response = tmp_tools
+                else:
+                    response = tmp_response.rstrip()
             else:
                 request_body = LLMInputOutputAdapter.prepare_input(
                     provider=provider,
