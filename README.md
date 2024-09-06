@@ -157,6 +157,8 @@ components:
           $ref: '#/components/schemas/Prompt'
         parameters:
           $ref: '#/components/schemas/ModelParameters'
+        tool_config:
+          $ref: '#/components/schemas/ToolConfig'
    Prompt:
       type: object
       example:
@@ -182,7 +184,18 @@ components:
         system:
           type: string
           required: false
-          
+    ToolConfig:
+      type: object
+      required: false
+      properties:
+        tools:
+          type: array
+          required: true
+          properties:
+            toolSpec:
+              type: object
+              required: true
+   
    Error:
       title: Error Schema
       type: object
