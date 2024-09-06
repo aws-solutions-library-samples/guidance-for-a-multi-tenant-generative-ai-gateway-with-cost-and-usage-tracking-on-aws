@@ -111,7 +111,7 @@
                      "premium": 0.012
                   }
              },
-            "stability.stable-diffusion-xl": {
+            "stability.stable-diffusion-xl-v1": {
                   "512x512": {
                       "standard": 0.018,
                       "premium": 0.036
@@ -119,6 +119,36 @@
                   "larger": {
                      "standard": 0.036,
                      "premium": 0.072
+                  }
+            },
+            "stability.sd3-large-v1:0": {
+                "512x512": {
+                      "standard": 0.08,
+                      "premium": 0.08
+                  },
+                  "larger": {
+                     "standard": 0.08,
+                     "premium": 0.08
+                  }
+            },
+            "stability.stable-image-core-v1:0": {
+                "512x512": {
+                      "standard": 0.04,
+                      "premium": 0.04
+                  },
+                  "larger": {
+                     "standard": 0.04,
+                     "premium": 0.04
+                  }
+            },
+            "stability.stable-image-ultra-v1:0": {
+                "512x512": {
+                      "standard": 0.14,
+                      "premium": 0.14
+                  },
+                  "larger": {
+                     "standard": 0.14,
+                     "premium": 0.14
                   }
             }
         }

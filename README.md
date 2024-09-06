@@ -17,6 +17,7 @@ gives flexibility to adapt to changing model versions, architectures and invocat
    1. [Full Deployment](#full-deployment)
    2. [API Key Deployment](#api-key-deployment)
 5. [SageMaker Endpoints](#sagemaker-endpoints)
+6. [API Usage](#api-usage)
 
 ## Project Description
 
@@ -345,6 +346,22 @@ supporting general purpose inference scripts provided by SageMaker JumpStart and
 
 It is required to adapt the lambda functions [invoke_model](./lambdas/invoke_model) and [invoke_model_streaming](./lambdas/invoke_model_streaming)
 in case of custom inference scripts.
+
+### API Usage
+
+The solution is providing two example notebooks for testing API requests with raw API invocation and with Langchain integration:
+1. Raw API: [01_bedrock_api.ipynb](./notebooks/01_bedrock_api.ipynb)
+2. Langchain Integration [02_bedrock_api_langchain.ipynb](./notebooks/02_bedrock_api_langchain.ipynb)
+
+#### How to get the API Gateway Endpoint:
+Navigate the Cloudformation deployment, get the value under `awsiapigwurl`
+
+#### How to get the API Key:
+1. Navigate the AWS Console
+2. Search for API Gateway
+3. Select the deployed `API Gateway`
+4. Copy the value from `API keys`
+
 
 ## Reading resources
 For additional reading, refer to:
