@@ -119,9 +119,11 @@ class IAM(Construct):
                 iam.PolicyStatement(
                     effect=iam.Effect.ALLOW,
                     actions=[
+                        "bedrock:GetInferenceProfile",
                         "bedrock:InvokeModel",
                         "bedrock:InvokeModelWithResponseStream",
-                        "bedrock:ListFoundationModels"
+                        "bedrock:ListFoundationModels",
+                        "bedrock:ListInferenceProfiles"
                     ],
                     resources=["*"],
                 )
