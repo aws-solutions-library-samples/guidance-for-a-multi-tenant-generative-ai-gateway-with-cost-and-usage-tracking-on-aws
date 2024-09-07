@@ -179,6 +179,7 @@ def calculate_cost(row):
         return input_token_count, output_token_count, input_cost, output_cost, 1
     except Exception as e:
         stacktrace = traceback.format_exc()
-        logger.error(stacktrace)
 
-        raise e
+        logger.error(f"Error processing row: {row}\n{stacktrace}")
+
+        return 0.0, 0.0, 0.0, 0.0, 1
