@@ -365,7 +365,7 @@ We can also deploy a specific stack as following:
 We can delete all the deployed stacks by running:
 
 ```
-./deploy_stack.sh
+./destroy_stack.sh
 ```
 
 ### Destroy a specific stack
@@ -373,7 +373,7 @@ We can delete all the deployed stacks by running:
 We can delete a specific stacks by running:
 
 ```
-./deploy_stack.sh <STACK_PREFIX>-bedrock-saas
+./destroy_stack.sh <STACK_PREFIX>-bedrock-saas
 ```
 
 ### SageMaker Endpoints
