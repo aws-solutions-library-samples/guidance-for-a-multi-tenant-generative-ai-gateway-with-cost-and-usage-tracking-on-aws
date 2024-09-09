@@ -17,7 +17,10 @@ gives flexibility to adapt to changing model versions, architectures and invocat
 4. [Deploy Stack](#deploy-stack)
    1. [Full Deployment](#full-deployment)
    2. [API Key Deployment](#api-key-deployment)
-5. [SageMaker Endpoints](#sagemaker-endpoints)
+5. [Destroy Stack](#destroy-stack)
+   1. [Destroy all the stacks](#destroy-all-the-stacks)
+   2. [Destroy a specific stack](#destroy-a-specific-stack)
+6. [SageMaker Endpoints](#sagemaker-endpoints)
 
 ## Project Description
 
@@ -284,6 +287,14 @@ chmod +x deploy_stack.sh
 ./deploy_stack.sh
 ```
 
+#### Optional Step 3
+
+We can also deploy a specific stack as following:
+
+```
+./deploy_stack.sh <STACK_PREFIX>-bedrock-saas
+```
+
 ### API Key Deployment
 
 #### Step 1
@@ -337,6 +348,32 @@ chmod +x deploy_stack.sh
 
 ```
 ./deploy_stack.sh
+```
+
+#### Optional Step 3
+
+We can also deploy a specific stack as following:
+
+```
+./deploy_stack.sh <STACK_PREFIX>-bedrock-saas
+```
+
+## Destroy Stack
+
+### Destroy all the stacks
+
+We can delete all the deployed stacks by running:
+
+```
+./deploy_stack.sh
+```
+
+### Destroy a specific stack
+
+We can delete a specific stacks by running:
+
+```
+./deploy_stack.sh <STACK_PREFIX>-bedrock-saas
 ```
 
 ### SageMaker Endpoints

@@ -356,6 +356,7 @@ class BedrockAPIStack(Stack):
         CfnOutput(self, f"{self.prefix_id}_api_gw_url", export_name=f"{self.prefix_id}ApiGatewayUrl", value=stage.url_for_path(path=None))
         CfnOutput(self, f"{self.prefix_id}_api_gw_id", export_name=f"{self.prefix_id}ApiGatewayId", value=api_gw.rest_api_id)
         CfnOutput(self, f"{self.prefix_id}_api_gw_resource_id", export_name=f"{self.prefix_id}ApiGatewayResourceId", value=api_gw.rest_api_root_resource_id)
+        CfnOutput(self, f"{self.prefix_id}_stack_name", export_name=f"{self.prefix_id}StackName", value=self.stack_name)
 
     def build_api_key(self):
         # ==================================================
@@ -376,6 +377,7 @@ class BedrockAPIStack(Stack):
         )
 
         CfnOutput(self, f"{self.prefix_id}_api_gw_url", export_name=f"{self.prefix_id}ApiGatewayUrl", value=stage.url_for_path(path=None))
+        CfnOutput(self, f"{self.prefix_id}_stack_name", export_name=f"{self.prefix_id}StackName", value=self.stack_name)
 
 # ==================================================
 # ============== STACK WITH COST CENTER ============
