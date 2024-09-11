@@ -157,7 +157,7 @@ def results_to_df(results):
 
     return df
 
-def calculate_cost(row):
+def calculate_cost(row, error_buffer):
     try:
         model_id = row["model_id"]
 
@@ -174,7 +174,7 @@ def calculate_cost(row):
         elif _is_in_model_list(model_id, list(model_list["image"].keys())):
             input_token_count, output_token_count, input_cost, output_cost = model_price_image(model_list["image"], row)
         else:
-            input_token_count, output_token_count, input_cost, output_cost = 0.0, 0.0, 0.0, 0.0
+            raise Exception(f"Unknown model: {model_id}")
 
         return input_token_count, output_token_count, input_cost, output_cost, 1
     except Exception as e:
@@ -182,4 +182,6 @@ def calculate_cost(row):
 
         logger.error(f"Error processing row: {row}\n{stacktrace}")
 
-        return 0.0, 0.0, 0.0, 0.0, 1
+        error_buffer.write(f"Row:\n{row}\n\n Stacktrace:\n{stacktrace}\n\n")
+
+        return None, None, None, None, None

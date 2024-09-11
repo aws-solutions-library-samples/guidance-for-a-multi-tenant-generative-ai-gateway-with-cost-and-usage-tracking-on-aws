@@ -40,15 +40,21 @@ def process_event(event):
             date = datetime.datetime.now(pytz.UTC) - datetime.timedelta(days=1)
             date = date.strftime("%Y-%m-%d")
 
+        #Create an error buffer for tracking the errors
+        error_buffer = StringIO()
+
         # querying the cloudwatch logs from the API
         query_results_api = run_query(QUERY_API, log_group_name_api, date)
         df_bedrock_cost_tracking = results_to_df(query_results_api)
 
         if len(df_bedrock_cost_tracking) > 0:
             # Apply the calculate_cost function to the DataFrame
-            df_bedrock_cost_tracking[["input_tokens", "output_tokens", "input_cost", "output_cost", "invocations"]] = df_bedrock_cost_tracking.apply(
-                calculate_cost, axis=1, result_type="expand"
+            df_bedrock_cost_tracking[["input_tokens", "output_tokens", "input_cost", "output_cost","invocations"]] = df_bedrock_cost_tracking.apply(
+                lambda row: calculate_cost(row, error_buffer), axis=1, result_type="expand"
             )
+
+            # Remove rows where calculate_cost returned None
+            df_bedrock_cost_tracking = df_bedrock_cost_tracking.dropna(subset=["input_tokens", "output_tokens", "input_cost", "output_cost", "invocations"])
 
             # aggregate cost for each model_id
             df_bedrock_cost_tracking_aggregated = df_bedrock_cost_tracking.groupby(["team_id", "model_id"]).sum()[
@@ -62,9 +68,14 @@ def process_event(event):
             csv_buffer = StringIO()
             df_bedrock_cost_tracking_aggregated.to_csv(csv_buffer)
 
-            file_name = f"{date}.csv"
+            file_name = f"succeed/{date}.csv"
 
             s3_resource.Object(s3_bucket, file_name).put(Body=csv_buffer.getvalue())
+
+            # Save error file to S3 if there are any errors
+            if error_buffer.getvalue():
+                error_file_name = f"errors/{date}.txt"
+                s3_resource.Object(s3_bucket, error_file_name).put(Body=error_buffer.getvalue())
     except Exception as e:
         stacktrace = traceback.format_exc()
         logger.error(stacktrace)

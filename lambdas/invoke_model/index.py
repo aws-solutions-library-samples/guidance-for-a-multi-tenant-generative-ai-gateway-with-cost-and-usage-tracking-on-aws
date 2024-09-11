@@ -455,7 +455,7 @@ def sagemaker_handler(event):
                 "width": None,
                 "steps": None
             }
-            cloudwatch_logger.info(logs)
+            _store_logs(logs)
         else:
             results = {"statusCode": 200, "body": json.dumps([{"request_id": custom_request_id}])}
 
