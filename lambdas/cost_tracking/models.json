@@ -6,6 +6,8 @@
             "ai21.j2-mid": {"input_cost": 0.0125, "output_cost": 0.0125},
             "ai21.j2-ultra": {"input_cost": 0.0188, "output_cost": 0.0188},
             "ai21.jamba-instruct-v1:0": {"input_cost": 0.0005, "output_cost": 0.0007},
+            "ai21.jamba-1-5-large-v1:0": {"input_cost": 0.002, "output_cost": 0.008},
+            "ai21.jamba-1-5-mini-v1:0": {"input_cost": 0.0002, "output_cost": 0.0004},
             "amazon.titan-text-lite-v1": {"input_cost": 0.00015, "output_cost": 0.0002},
             "amazon.titan-text-express-v1": {"input_cost": 0.0002, "output_cost": 0.0006},
             "amazon.titan-text-premier-v1:0": {"input_cost": 0.0005, "output_cost": 0.0015},
@@ -26,6 +28,10 @@
             "meta.llama2-70b-chat-v1": {"input_cost": 0.00195, "output_cost": 0.00256},
             "meta.llama3-8b-instruct-v1:0": {"input_cost": 0.0004, "output_cost": 0.0006},
             "meta.llama3-70b-instruct-v1:0": {"input_cost": 0.00265, "output_cost": 0.0035},
+            "meta.llama3-2-1b-instruct-v1:0": {"input_cost": 0.0001, "output_cost": 0.0001},
+            "meta.llama3-2-3b-instruct-v1:0": {"input_cost": 0.00015, "output_cost": 0.00015},
+            "meta.llama3-2-11b-instruct-v1:0": {"input_cost": 0.00035, "output_cost": 0.00035},
+            "meta.llama3-2-90b-instruct-v1:0": {"input_cost": 0.002, "output_cost": 0.002},
             "mistral.mistral-7b-instruct-v0:2": {"input_cost": 0.00015, "output_cost": 0.0002},
             "mistral.mixtral-8x7b-instruct-v0:1": {"input_cost": 0.00045, "output_cost": 0.0007},
             "mistral.mistral-large-2402-v1:0": {"input_cost": 0.008, "output_cost": 0.024},
@@ -88,6 +94,10 @@
             "meta.llama3-1-8b-instruct-v1:0": {"input_cost": 0.0003, "output_cost": 0.0006},
             "meta.llama3-1-70b-instruct-v1:0": {"input_cost": 0.00265, "output_cost": 0.0035},
             "meta.llama3-1-405b-instruct-v1:0": {"input_cost": 0.00532, "output_cost": 0.016},
+            "meta.llama3-2-1b-instruct-v1:0": {"input_cost": 0.0001, "output_cost": 0.0001},
+            "meta.llama3-2-3b-instruct-v1:0": {"input_cost": 0.00015, "output_cost": 0.00015},
+            "meta.llama3-2-11b-instruct-v1:0": {"input_cost": 0.00035, "output_cost": 0.00035},
+            "meta.llama3-2-90b-instruct-v1:0": {"input_cost": 0.002, "output_cost": 0.002},
             "mistral.mistral-7b-instruct-v0:2": {"input_cost": 0.00015, "output_cost": 0.0002},
             "mistral.mixtral-8x7b-instruct-v0:1": {"input_cost": 0.00045, "output_cost": 0.0007},
             "mistral.mistral-large-2402-v1:0": {"input_cost": 0.008, "output_cost": 0.024},
@@ -218,8 +228,8 @@
             "amazon.titan-text-express-v1": {"input_cost": 0.000275, "output_cost": 0.000825},
             "anthropic.claude-instant-v1": {"input_cost": 0.0008, "output_cost": 0.0024},
             "anthropic.claude-v2:1": {"input_cost": 0.008, "output_cost": 0.024},
-            "anthropic.claude-3-sonnet-20240229-v1:0": {"input_cost": 0.003, "output_cost": 0.015},
-            "anthropic.claude-3-haiku-20240307-v1:0": {"input_cost": 0.00025, "output_cost": 0.00125}
+            "anthropic.claude-3-haiku-20240307-v1:0": {"input_cost": 0.00025, "output_cost": 0.00125},
+            "anthropic.claude-3-5-sonnet-20240620-v1:0": {"input_cost": 0.003, "output_cost": 0.015}
         },
         "embeddings": {
             "amazon.titan-embed-text-v1": {"input_cost": 0.0002, "output_cost": 0},
@@ -258,7 +268,9 @@
             "anthropic.claude-v2:1": {"input_cost": 0.008, "output_cost": 0.024},
             "anthropic.claude-3-sonnet-20240229-v1:0": {"input_cost": 0.003, "output_cost": 0.015},
             "anthropic.claude-3-haiku-20240307-v1:0": {"input_cost": 0.00025, "output_cost": 0.00125},
-            "anthropic.claude-3-5-sonnet-20240620-v1:0": {"input_cost": 0.003, "output_cost": 0.015}
+            "anthropic.claude-3-5-sonnet-20240620-v1:0": {"input_cost": 0.003, "output_cost": 0.015},
+            "meta.llama3-2-1b-instruct-v1:0": {"input_cost": 0.0001, "output_cost": 0.0001},
+            "meta.llama3-2-3b-instruct-v1:0": {"input_cost": 0.00015, "output_cost": 0.00015}
         },
         "embeddings": {
             "amazon.titan-embed-text-v1": {"input_cost": 0.0002, "output_cost": 0},
@@ -276,8 +288,11 @@
             "amazon.titan-text-express-v1": {"input_cost": 0.001, "output_cost": 0.0017},
             "anthropic.claude-3-sonnet-20240229-v1:0": {"input_cost": 0.003, "output_cost": 0.015},
             "anthropic.claude-3-haiku-20240307-v1:0": {"input_cost": 0.00025, "output_cost": 0.00125},
+            "anthropic.claude-3-5-sonnet-20240620-v1:0": {"input_cost": 0.003, "output_cost": 0.015},
             "meta.llama3-8b-instruct-v1:0": {"input_cost": 0.00043, "output_cost": 0.00065},
             "meta.llama3-70b-instruct-v1:0": {"input_cost": 0.00286, "output_cost": 0.00378},
+            "meta.llama3-2-1b-instruct-v1:0": {"input_cost": 0.0001, "output_cost": 0.0001},
+            "meta.llama3-2-3b-instruct-v1:0": {"input_cost": 0.00015, "output_cost": 0.00015},
             "mistral.mistral-7b-instruct-v0:2": {"input_cost": 0.00016, "output_cost": 0.00022},
             "mistral.mixtral-8x7b-instruct-v0:1": {"input_cost": 0.00049, "output_cost": 0.00076},
             "mistral.mistral-large-2402-v1:0": {"input_cost": 0.0086, "output_cost": 0.0259}
@@ -338,6 +353,8 @@
             "amazon.titan-text-express-v1": {"input_cost": 0.00025, "output_cost": 0.000788},
             "anthropic.claude-3-sonnet-20240229-v1:0": {"input_cost": 0.003, "output_cost": 0.015},
             "anthropic.claude-3-haiku-20240307-v1:0": {"input_cost": 0.00025, "output_cost": 0.00125},
+            "meta.llama3-2-1b-instruct-v1:0": {"input_cost": 0.0001, "output_cost": 0.0001},
+            "meta.llama3-2-3b-instruct-v1:0": {"input_cost": 0.00015, "output_cost": 0.00015},
             "mistral.mistral-7b-instruct-v0:2": {"input_cost": 0.0002, "output_cost": 0.00026},
             "mistral.mixtral-8x7b-instruct-v0:1": {"input_cost": 0.00059, "output_cost": 0.00091},
             "mistral.mistral-large-2402-v1:0": {"input_cost": 0.0104, "output_cost": 0.0312}
@@ -345,6 +362,25 @@
         "embeddings": {
             "amazon.titan-embed-image-v1": {"input_cost": 0.001, "output_cost": 0},
             "amazon.titan-embed-image-v1-image": {"input_cost": 0.00008, "output_cost": 0},
+            "cohere.embed-english-v3": {"input_cost": 0.0001, "output_cost": 0},
+            "cohere.embed-multilingual-v3": {"input_cost": 0.0001, "output_cost": 0}
+        },
+        "image": {}
+    },
+    "sa-east-1": {
+        "text": {
+            "amazon.titan-text-lite-v1": {"input_cost": 0.0003, "output_cost": 0.0004},
+            "amazon.titan-text-express-v1": {"input_cost": 0.0004, "output_cost": 0.0011},
+            "anthropic.claude-3-sonnet-20240229-v1:0": {"input_cost": 0.003, "output_cost": 0.015},
+            "anthropic.claude-3-haiku-20240307-v1:0": {"input_cost": 0.00025, "output_cost": 0.00125},
+            "mistral.mistral-7b-instruct-v0:2": {"input_cost": 0.00025, "output_cost": 0.00034},
+            "mistral.mixtral-8x7b-instruct-v0:1": {"input_cost": 0.00076, "output_cost": 0.00118},
+            "mistral.mistral-large-2402-v1:0": {"input_cost": 0.0104, "output_cost": 0.0312}
+        },
+        "embeddings": {
+            "amazon.titan-embed-text-v2:0": {"input_cost": 0.0002, "output_cost": 0},
+            "amazon.titan-embed-image-v1": {"input_cost": 0.0012, "output_cost": 0},
+            "amazon.titan-embed-image-v1-image": {"input_cost": 0.0001, "output_cost": 0},
             "cohere.embed-english-v3": {"input_cost": 0.0001, "output_cost": 0},
             "cohere.embed-multilingual-v3": {"input_cost": 0.0001, "output_cost": 0}
         },
