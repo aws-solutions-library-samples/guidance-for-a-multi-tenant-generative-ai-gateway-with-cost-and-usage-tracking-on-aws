@@ -5,7 +5,7 @@ import logging
 import os
 import pytz
 import traceback
-from utils import run_query, results_to_df, calculate_cost
+from utils import merge_and_process_logs, run_query, results_to_df, calculate_cost
 
 logger = logging.getLogger(__name__)
 if len(logging.getLogger().handlers) > 0:
@@ -32,6 +32,21 @@ message.steps as steps
 | filter level = "INFO"
 """
 
+QUERY_API_WITH_KEY = """
+fields 
+message.team_id as team_id,
+message.api_key as api_key,
+message.requestId as request_id,
+message.region as region,
+message.model_id as model_id,
+message.inputTokens as input_tokens,
+message.outputTokens as output_tokens,
+message.height as height,
+message.width as width,
+message.steps as steps
+| filter level = "INFO"
+"""
+
 def process_event(event):
     try:
         if "date" in event:
@@ -45,6 +60,9 @@ def process_event(event):
 
         # querying the cloudwatch logs from the API
         query_results_api = run_query(QUERY_API, log_group_name_api, date)
+        query_results_api_key = run_query(QUERY_API_WITH_KEY, log_group_name_api, date)
+
+        query_results_api = merge_and_process_logs(query_results_api, query_results_api_key)
         df_bedrock_cost_tracking = results_to_df(query_results_api)
 
         if len(df_bedrock_cost_tracking) > 0:
@@ -57,7 +75,7 @@ def process_event(event):
             df_bedrock_cost_tracking = df_bedrock_cost_tracking.dropna(subset=["input_tokens", "output_tokens", "input_cost", "output_cost", "invocations"])
 
             # aggregate cost for each model_id
-            df_bedrock_cost_tracking_aggregated = df_bedrock_cost_tracking.groupby(["team_id", "model_id"]).sum()[
+            df_bedrock_cost_tracking_aggregated = df_bedrock_cost_tracking.groupby(["api_key", "team_id", "model_id"]).sum()[
                 ["input_tokens", "output_tokens", "input_cost", "output_cost", "invocations"]
             ]
 

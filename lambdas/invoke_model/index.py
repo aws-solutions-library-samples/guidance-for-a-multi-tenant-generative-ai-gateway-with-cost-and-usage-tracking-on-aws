@@ -231,6 +231,7 @@ def bedrock_handler(event):
             results = {"statusCode": 200, "body": json.dumps([{"embedding": response}])}
             logs = {
                 "team_id": team_id,
+                "api_key": api_key,
                 "requestId": request_id,
                 "region": bedrock_region,
                 "model_id": model_id,
@@ -249,6 +250,7 @@ def bedrock_handler(event):
             results = {"statusCode": 200, "body": json.dumps([{"embedding": response}])}
             logs = {
                 "team_id": team_id,
+                "api_key": api_key,
                 "requestId": request_id,
                 "region": bedrock_region,
                 "model_id": model_id + "-image",
@@ -266,6 +268,7 @@ def bedrock_handler(event):
             results = {"statusCode": 200, "body": json.dumps([response])}
             logs = {
                 "team_id": team_id,
+                "api_key": api_key,
                 "requestId": request_id,
                 "region": bedrock_region,
                 "model_id": model_id,
@@ -300,6 +303,7 @@ def bedrock_handler(event):
                 results = {"statusCode": 200, "body": json.dumps([{"generated_text": response}])}
                 logs = {
                     "team_id": team_id,
+                    "api_key": api_key,
                     "requestId": request_id,
                     "region": bedrock_region,
                     "model_id": model_id,
@@ -327,6 +331,7 @@ def bedrock_handler(event):
             connections.delete_item(Key={"composite_pk": f"{custom_request_id}_{api_key}"})
             logs = {
                 "team_id": team_id,
+                "api_key": api_key,
                 "requestId": custom_request_id,
                 "region": bedrock_region,
                 "model_id": response.get("model_id"),
@@ -385,6 +390,7 @@ def sagemaker_handler(event):
 
             logs = {
                 "team_id": team_id,
+                "api_key": api_key,
                 "requestId": request_id,
                 "region": sagemaker_region,
                 "model_id": model_id,
@@ -418,6 +424,7 @@ def sagemaker_handler(event):
                 results = {"statusCode": 200, "body": json.dumps([{"generated_text": response}])}
                 logs = {
                     "team_id": team_id,
+                    "api_key": api_key,
                     "requestId": request_id,
                     "region": sagemaker_region,
                     "model_id": model_id,
@@ -446,6 +453,7 @@ def sagemaker_handler(event):
             connections.delete_item(Key={"composite_pk": f"{custom_request_id}_{api_key}"})
             logs = {
                 "team_id": team_id,
+                "api_key": api_key,
                 "requestId": custom_request_id,
                 "region": sagemaker_region,
                 "model_id": response.get("model_id"),

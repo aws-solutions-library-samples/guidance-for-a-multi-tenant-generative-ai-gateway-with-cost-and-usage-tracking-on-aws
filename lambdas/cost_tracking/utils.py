@@ -51,6 +51,35 @@ def get_model_pricing(model_id, MODEL_PRICES):
 
         return None
 
+def merge_and_process_logs(object1, object2):
+    # Step 1: Process object1
+    if len(object1) > 0:
+        final_list = []
+
+        for item in object1:
+            if not any(d['field'] == 'api_key' for d in item):
+                item.append({'field': 'api_key', 'value': ''})
+
+            request_id_item = next(el['value'] for el in item if el['field'] == 'request_id')
+            found = False
+
+            for item2 in object2:
+                request_id_item_2 = next(el['value'] for el in item2 if el['field'] == 'request_id')
+                if request_id_item == request_id_item_2:
+                    found = True
+                    final_list.append(item2)
+                    break
+
+            if not found:
+                final_list.append(item)
+        return final_list
+    else:
+        return object2
+
+    # Convert the merged dictionary back to the original format
+    result = [[{'field': k, 'value': v} for k, v in item.items()] for item in merged.values()]
+    return result
+
 def run_query(query, log_group_name, date=None):
     cloudwatch = boto3.client("logs")
 
