@@ -18,6 +18,7 @@
             "anthropic.claude-3-haiku-20240307-v1:0": {"input_cost": 0.00025, "output_cost": 0.00125},
             "anthropic.claude-3-opus-20240229-v1:0": {"input_cost": 0.01500, "output_cost": 0.07500},
             "anthropic.claude-3-5-sonnet-20240620-v1:0": {"input_cost": 0.003, "output_cost": 0.015},
+            "anthropic.claude-3-5-sonnet-20241022-v2:0": {"input_cost": 0.003, "output_cost": 0.015},
             "cohere.command-text-v14": {"input_cost": 0.0015, "output_cost": 0.0020},
             "cohere.command-light-text-v14": {"input_cost": 0.0003, "output_cost": 0.0006},
             "cohere.command-r-plus-v1:0": {"input_cost": 0.0030, "output_cost": 0.0150},
@@ -81,6 +82,7 @@
             "anthropic.claude-3-haiku-20240307-v1:0": {"input_cost": 0.00025, "output_cost": 0.00125},
             "anthropic.claude-3-opus-20240229-v1:0": {"input_cost": 0.01500, "output_cost": 0.07500},
             "anthropic.claude-3-5-sonnet-20240620-v1:0": {"input_cost": 0.003, "output_cost": 0.015},
+            "anthropic.claude-3-5-sonnet-20241022-v2:0": {"input_cost": 0.003, "output_cost": 0.015},
             "cohere.command-text-v14": {"input_cost": 0.0015, "output_cost": 0.0020},
             "cohere.command-light-text-v14": {"input_cost": 0.0003, "output_cost": 0.0006},
             "cohere.command-r-plus-v1:0": {"input_cost": 0.0030, "output_cost": 0.0150},
@@ -168,8 +170,8 @@
         "text": {
             "amazon.titan-text-lite-v1": {"input_cost": 0.0004, "output_cost": 0.0005},
             "amazon.titan-text-express-v1": {"input_cost": 0.001, "output_cost": 0.0019},
-            "anthropic.claude-3-sonnet-20240229-v1:0": {"input_cost": 0.003, "output_cost": 0.015},
             "anthropic.claude-3-haiku-20240307-v1:0": {"input_cost": 0.00025, "output_cost": 0.00125},
+            "anthropic.claude-3-sonnet-20240229-v1:0": {"input_cost": 0.003, "output_cost": 0.015},
             "meta.llama3-8b-instruct-v1:0": {"input_cost": 0.00048, "output_cost": 0.00072},
             "meta.llama3-70b-instruct-v1:0": {"input_cost": 0.00318, "output_cost": 0.0042},
             "mistral.mistral-7b-instruct-v0:2": {"input_cost": 0.00018, "output_cost": 0.00024},
@@ -196,6 +198,16 @@
                   }
             }
         }
+    },
+    "ap-northeast-2": {
+        "text": {
+            "anthropic.claude-3-haiku-20240307-v1:0": {"input_cost": 0.00025, "output_cost": 0.00125},
+            "anthropic.claude-3-sonnet-20240229-v1:0": {"input_cost": 0.003, "output_cost": 0.015}
+        },
+        "embeddings": {
+            "amazon.titan-embed-text-v2:0": {"input_cost": 0.000024592, "output_cost": 0}
+        },
+        "image": {}
     },
     "ap-southeast-1": {
         "text": {},
